@@ -1,0 +1,24 @@
+# ================== DO NOT MODIFY ========================== #
+# Unless you know what you're doing...
+
+# Model variables
+debug_mode:0
+new_model:0
+batch_size:128
+epochs:5
+model_iters:3
+
+# Training files to be used for the model
+train_dir:./train_data/
+seismos_train:seismograms_t2.npy
+arrivals_train:arrivals_t2.npy
+
+# =================== FOR THE USER ========================== #
+# Change these as needed
+# Make sure directories always end with a forwardslash (/)!!!
+
+# Directories of seismograms to predict for and the
+# corresponding arrival variable
+
+pred_dir:../seismograms/seis_1/,../seismograms/seis_2
+arrival_var:t2
