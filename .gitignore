@@ -1,1 +1,4 @@
 *.s_fil
+*.npy
+*.npz
+*.gif

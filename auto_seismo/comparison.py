@@ -12,6 +12,7 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
+import matplotlib.animation as animation
 from keras.models import load_model
 from tensorflow.losses import huber_loss
 
@@ -30,13 +31,86 @@ mpl.rcParams['ytick.major.size'] = 12
 mpl.rcParams['ytick.minor.size'] = 8
 mpl.rcParams['ytick.labelsize'] = 24
 
-directory = '../seismograms/seis_1/'
+directory = '../../seismograms/seis_1/'
 files = np.sort(os.listdir(directory))
 seis_files = files[0:4]
 
 keras.losses.huber_loss = huber_loss
 arrive_model = load_model('./models/arrival_prediction_model_noflip.h5')
 
+def make_pred(file, flip=False):
+    seismogram = obspy.read(directory+file)[0]
+    time = seismogram.times()
+    init = np.where(time > seismogram.stats.sac.t2 + np.random.rand()*8 - 10 - seismogram.stats.sac.b)[0][0]
+    end = init + 1000
+    time = time[init:end] - time[init]
+    amp_i = seismogram.data[init:end]
+    if flip:
+        amp_i = -amp_i
+    amp_i = (amp_i - amp_i.min()) / (amp_i.max() - amp_i.min())
+    pred = arrive_model.predict(amp_i[:400].reshape((1, 400, 1))).flatten()[0]
+    actual = seismogram.stats.sac.t6 - seismogram.stats.sac.b - seismogram.times()[init]
+    
+    return time, amp_i, pred, actual
+
+plot_flip = False
+save_gif = False
+
+fig, ax = plt.subplots()
+seis_plot = ax.plot([], [])[0]
+pred_line = ax.plot([], [], color='black', linestyle='--', label='Prediction')[0]
+actual_line = ax.plot([], [], color='red', label='Actual')[0]
+ax.set_xlim(0, 100)
+ax.set_ylim(-0.05, 1.05)
+ax.xaxis.set_minor_locator(mtick.MultipleLocator(5))
+ax.yaxis.set_minor_locator(mtick.MultipleLocator(0.1))
+ax.set_xlabel('Time From Cut [s]')
+ax.set_ylabel('Relative Amplitude')
+ax.legend()
+
+def init():
+    seis_plot.set_data([],[])
+    pred_line.set_data([],[])
+    actual_line.set_data([],[])
+    return seis_plot
+
+def animate_noflip(i):
+    file = seis_files[3]
+    time, amp_i, pred, actual = make_pred(file)
+    
+    seis_plot.set_data(time, amp_i)
+    pred_line.set_data(np.ones(50)*pred, np.linspace(-0.05, 1.05))
+    actual_line.set_data(np.ones(50)*actual, np.linspace(-0.05, 1.05))
+    return seis_plot
+
+def animate_flip(i):
+    file = seis_files[3]
+    time, amp_i, pred, actual = make_pred(file, flip=True)
+    
+    seis_plot.set_data(time, amp_i)
+    pred_line.set_data(np.ones(50)*pred, np.linspace(-0.05, 1.05))
+    actual_line.set_data(np.ones(50)*actual, np.linspace(-0.05, 1.05))
+    return seis_plot
+
+if not plot_flip:
+    ax.set_title('Unflipped Seismogram')
+    plt.tight_layout()
+    animated_noflip = animation.FuncAnimation(fig, animate_noflip, init_func=init,
+                                        frames=10, interval=1000)
+    if save_gif:
+        animated_noflip.save('../figs/unflipped_seis_pred.gif', 
+                             writer=animation.PillowWriter(fps=1))
+else:
+    ax.set_title('Flipped Seismogram')
+    plt.tight_layout()
+    animated_flip = animation.FuncAnimation(fig, animate_flip, init_func=init,
+                                        frames=10, interval=1000)
+    if save_gif:
+        animated_flip.save('../figs/flipped_seis_pred.gif',
+                           writer=animation.PillowWriter(fps=1))
+
+'''
+# Compare different files preds
 for flip in range(2):
     for file in seis_files:
         seismogram = obspy.read(directory+file)[0]
@@ -60,40 +134,34 @@ for flip in range(2):
         ax.yaxis.set_minor_locator(mtick.MultipleLocator(0.1))
         ax.set_xlabel('Time From Cut [s]')
         ax.set_ylabel('Relative Amplitude')
-
+        plt.tight_layout()
+'''
 
 '''
-fig, ax = plt.subplots(nrows=2, ncols=2, sharex=True, sharey=True)
-#sample_seis = np.random.randint(0, high=len(seismograms), size=4)
-#sample_seis = np.array([34982, 197662, 22390, 165919])
-# good one: 34982, 197662, 22390, 165919
-sample_seis = np.array([0, 1, 2, 3])
-#t = np.arange(0, 40, 0.1)
-for n, i in enumerate(sample_seis):
-    s = obspy.read(datadir+files[i])[0]
-    t = s.times()
-    init = np.where(t > s.stats.sac.t2 - 10 - s.stats.sac.b)[0][0]
+# Compare same file diff window predictions
+for i in range(10):
+    file = seis_files[0]
+    seismogram = obspy.read(directory+file)[0]
+    time = seismogram.times()
+    init = np.where(time > seismogram.stats.sac.t2 + np.random.rand()*8 - 10 - seismogram.stats.sac.b)[0][0]
     end = init + 1000
-    t = t[init:end] - t[init]
-    amp_i = s.data[init:end]
+    time = time[init:end] - time[init]
+    amp_i = seismogram.data[init:end]
+    if i > 4:
+        amp_i = -amp_i
     amp_i = (amp_i - amp_i.min()) / (amp_i.max() - amp_i.min())
-    p = arrive_model.predict(amp_i[:400].reshape((1, 400, 1))).flatten()[0]
-    a = s.stats.sac.t6 - s.stats.sac.t2 + 10
-    ax[n//2][n%2].plot(t, amp_i, color='black')
-    ax[n//2][n%2].axvline(p, color='black', linestyle='--', label='Prediction')
-    ax[n//2][n%2].axvline(a, color='red', label='Actual')
-    ax[n//2][n%2].set_xlim(0, 100)
-    ax[n//2][n%2].set_ylim(-0.05, 1.05)
-    ax[n//2][n%2].xaxis.set_minor_locator(mtick.MultipleLocator(5))
-    ax[n//2][n%2].yaxis.set_minor_locator(mtick.MultipleLocator(0.1))
-    #ax[1][n%2].set_xlabel('Time From Cut [s]')
-    #ax[n//2][n%1].set_ylabel('Relative Amplitude')
-ax[0][1].legend(fontsize=12)
-fig.add_subplot(111, frameon=False)
-plt.tick_params(labelcolor='none', top=False, bottom=False, left=False, right=False)
-plt.xlabel('Time From Cut [s]')
-plt.ylabel('Relative Amplitude')
-#fig.text(0.5, 0.02, 'Time From Cut [s]', ha='center')
-#fig.text(0.04, 0.5, 'Relative Amplitude', va='center', rotation='vertical')
-plt.tight_layout()
+    pred = arrive_model.predict(amp_i[:400].reshape((1, 400, 1))).flatten()[0]
+    actual = seismogram.stats.sac.t6 - seismogram.stats.sac.b - seismogram.times()[init]
+    fig, ax = plt.subplots()
+    ax.plot(time, amp_i)
+    ax.axvline(pred, color='black', linestyle='--', label='Prediction')
+    ax.axvline(actual, color='red', label='Actual')
+    ax.set_xlim(0, 100)
+    ax.set_ylim(-0.05, 1.05)
+    ax.xaxis.set_minor_locator(mtick.MultipleLocator(5))
+    ax.yaxis.set_minor_locator(mtick.MultipleLocator(0.1))
+    ax.set_xlabel('Time From Cut [s]')
+    ax.set_ylabel('Relative Amplitude')
+    plt.tight_layout()
+    plt.close()
 '''
