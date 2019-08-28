@@ -9,17 +9,20 @@ Created on Tue Oct  2 22:35:00 2018
 import os
 import obspy
 import numpy as np
+from aux_funcs import check_string
 
 # ../../../seismograms/seis_1/
 
 def make_arrays(datadir, th_arrival_var):
     name = datadir.split('/')[-2]
+    name = check_string(name)
     files = os.listdir(datadir)
     if name not in os.listdir('./pred_data/'):
         os.makedirs('./pred_data/' + name)
     
     resample_Hz = 10
     for i, file in enumerate(files):
+        file = check_string(file)
         noflips = []
         flips = []
         cut_times = []

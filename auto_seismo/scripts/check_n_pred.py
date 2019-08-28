@@ -12,7 +12,7 @@ import numpy as np
 from seismo_arrays import make_arrays
 from arrival_pred import init_Arrive_Model
 from make_pred import predict_arrival
-from read_config import read_config
+from aux_funcs import read_config
 import csv
 from keras.models import load_model
 import keras.losses

@@ -16,6 +16,7 @@ Created on Tue Oct  2 22:35:00 2018
 import os
 import obspy
 import numpy as np
+from aux_funcs import check_string
 
 datadir = '../train_data/'
 good = 'good/' # qual_var 1
@@ -33,6 +34,7 @@ def make_arrays(datadir, qualtype, th_arrival_var, arrival_var, qual_var):
     polarities = []
     
     for i, file in enumerate(files):
+        file = check_string(file)
         print(i+1, '/', len(files))
         seismogram = obspy.read(datadir + file)
         seismogram = seismogram[0].resample(resample_Hz).detrend()

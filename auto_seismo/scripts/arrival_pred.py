@@ -20,8 +20,13 @@ import tensorflow as tf
 import keras
 from keras.layers import Dense, Flatten, Conv1D, MaxPooling1D, BatchNormalization
 from keras.models import Sequential
+from aux_funcs import check_string
 
 def init_Arrive_Model(train_dir, seismos_train, arrivals_train, batch_size, epochs, model_iters, debug_mode=False):
+    train_dir = check_string(train_dir)
+    seismos_train = check_string(seismos_train)
+    arrivals_train = check_string(arrivals_train)
+    
     seismograms = np.load(train_dir + seismos_train)
     arrivals = np.load(train_dir + arrivals_train)
     

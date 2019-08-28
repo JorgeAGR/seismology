@@ -6,6 +6,15 @@ Created on Wed Aug 28 16:34:34 2019
 @author: jorgeagr
 """
 
+# Safeguard for some systems
+def check_string(string):
+    '''
+    fixed_strings = []
+    for string in strings:
+        fixed_strings.append(string.rstrip('\r'))
+    '''
+    return string.rstrip('\r')
+
 # Load cnn_config.txt file and reads the set values for variables to be used
 def read_config(file_path):
     config_dic = {}
@@ -30,9 +39,6 @@ def read_config(file_path):
     # Safeguard for some systems
     for key in config_dic:
         if type(config_dic[key]) == str:
-            if config_dic[key][-2:] == '\r':
-                print(config_dic[key])
-                config_dic[key] = config_dic[key][:-2]
-                print(config_dic[key])
+            check_string(config_dic[key])
     
     return config_dic

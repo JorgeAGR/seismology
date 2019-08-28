@@ -8,9 +8,11 @@ Created on Mon Aug 26 14:22:23 2019
 import os
 import numpy as np
 import obspy
+from aux_funcs import check_string
 
 def predict_arrival(model, datadir):
     name = datadir.split('/')[-2]
+    name = check_string(name)
     npzdir = './pred_data/' + name + '/'
     
     seis_names = []
@@ -18,6 +20,7 @@ def predict_arrival(model, datadir):
     pred_error = []
     flipped = []
     for file in os.listdir(npzdir):
+        file = check_string(file)
         seismogram = np.load(npzdir + file)
         
         noflips = seismogram['noflips']
