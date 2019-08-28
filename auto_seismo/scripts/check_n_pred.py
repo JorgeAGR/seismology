@@ -12,11 +12,15 @@ import numpy as np
 from seismo_arrays import make_arrays
 from arrival_pred import init_Arrive_Model
 from make_pred import predict_arrival
+from read_config import read_config
 import csv
 from keras.models import load_model
 import keras.losses
 import tensorflow as tf
 
+
+config_dic = read_config('./cnn_config.txt')
+'''
 # Load cnn_config.txt file and reads the set values for variables to be used
 config_dic = {}
 with open('./cnn_config.txt') as config:
@@ -36,7 +40,7 @@ with open('./cnn_config.txt') as config:
                 config_dic[line[0]] = int(config_dic[line[0]])
             except:
                 pass
-
+'''
 # Trains a new model if desired or if none present, else load the present one
 if config_dic['debug_mode'] == 1:
     print('Using debug mode...')
