@@ -56,12 +56,3 @@ def predict_arrival(model, datadir):
     flipped = np.asarray(flipped)
     
     return seis_names, pred_arrival, pred_error, flipped
-
-
-def test_pred(datadir):
-    actuals = []
-    for file in os.listdir(datadir):
-        seismogram = obspy.read(datadir + file)[0]
-        actuals.append(seismogram.stats.sac.t6 - seismogram.stats.sac.b)
-    actuals = np.asarray(actuals)
-    return actuals

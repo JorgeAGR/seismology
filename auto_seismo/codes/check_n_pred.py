@@ -20,27 +20,7 @@ import tensorflow as tf
 
 
 config_dic = read_config('./cnn_config.txt')
-'''
-# Load cnn_config.txt file and reads the set values for variables to be used
-config_dic = {}
-with open('./cnn_config.txt') as config:
-    lines = config.readlines()
-    for i, line in enumerate(lines):
-        if (line != '\n') and ('#' not in line[0]):
-            split_vals = False
-            if ',' in line:
-                split_vals = True
-            line = line.rstrip('\n').split(':')
-            config_dic[line[0]] = [text for text in line[1:]]
-            if split_vals:
-                config_dic[line[0]] = config_dic[line[0]][0].split(',')
-            if (len(config_dic[line[0]]) == 1) and (line[0] != 'pred_dir'):
-                config_dic[line[0]] = config_dic[line[0]][0]
-            try:
-                config_dic[line[0]] = int(config_dic[line[0]])
-            except:
-                pass
-'''
+
 # Trains a new model if desired or if none present, else load the present one
 if config_dic['debug_mode'] == 1:
     print('Using debug mode...')
@@ -81,7 +61,7 @@ for n, d in enumerate(config_dic['pred_dir']):
     print('Working on directory:', d)
     print('Making SAC files into arrays...')
     make_arrays(d, config_dic['arrival_var'])
-    files, pred_avg, pred_err = predict_arrival(arrive_model, d)
+    files, pred_avg, pred_err, flipped = predict_arrival(arrive_model, d)
     
     #file = './pred_data/seismograms_' + d.split('/')[-2] + '.npy'
     

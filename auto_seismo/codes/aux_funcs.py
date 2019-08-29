@@ -39,6 +39,6 @@ def read_config(file_path):
     # Safeguard for some systems
     for key in config_dic:
         if type(config_dic[key]) == str:
-            check_string(config_dic[key])
+            config_dic[key] = check_string(config_dic[key])
     
     return config_dic

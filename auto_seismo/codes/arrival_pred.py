@@ -110,7 +110,7 @@ def init_Arrive_Model(train_dir, seismos_train, arrivals_train, batch_size, epoc
     best_model = np.argmin(models_means)
     print('Using best model: Model', best_model)
     model = models[best_model]
-    np.save('model_train_test_index.npy', shuffled_indeces[best_model])
+    np.save('./models/etc/model_train_test_index.npy', shuffled_indeces[best_model])
     print('Best Model Avg Diff:', models_means[best_model])
     print('Best Model Avg Diff Error:', models_stds[best_model])
     
