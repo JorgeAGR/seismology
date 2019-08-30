@@ -54,8 +54,22 @@ else:
 avail_files = []
 avail_arrivals = []
 for i, file in enumerate(dir_files):
-    if str(file[:-6]) in files:
+    if str(file.rstrip('.s_fil')) in files:
         avail_files.append(file)
         avail_arrivals.append(arrivals[i])
 dir_files = np.asarray(avail_files)
 arrivals = np.asarray(avail_arrivals)
+
+error = pred_avg - arrivals
+
+fig, ax = plt.subplots()
+weights = np.ones_like(error)/len(error)
+hist = ax.hist(error, np.arange(-1, 1, 0.1), histtype='stepfilled', align='mid', 
+        color='black', linewidth=1, weights=weights, cumulative=False)
+ax.set_xlim(-1, 1)
+
+fig2, ax2 = plt.subplots()
+cum_hist = ax2.hist(np.abs(error), np.arange(0, 1.1, 0.001), histtype='step', align='mid', 
+        color='black', linewidth=1, weights=weights, cumulative=True)
+ax2.axhline(0.95, linestyle='--', color='red')
+ax2.set_xlim(-0.01, 1)
