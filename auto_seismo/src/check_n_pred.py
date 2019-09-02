@@ -10,7 +10,7 @@ import os
 import numpy as np
 #import sac2npy
 from seismo_arrays import make_arrays
-from arrival_pred import init_Arrive_Model
+from models import pred_Time_Model
 from make_pred import predict_arrival
 from aux_funcs import read_config
 import csv
@@ -24,14 +24,14 @@ config_dic = read_config('./cnn_config.txt')
 # Trains a new model if desired or if none present, else load the present one
 if config_dic['debug_mode'] == 1:
     print('Using debug mode...')
-    arrive_model = init_Arrive_Model(config_dic['train_dir'], 
+    arrive_model = pred_Time_Model(config_dic['train_dir'], 
                                      config_dic['seismos_train'],
                                      config_dic['arrivals_train'],
                                      128, 1, 1, debug_mode=True)
     
 elif (config_dic['new_model'] == 1) or (len(os.listdir('./models/')) == 0):
     print('Creating new model...')
-    arrive_model = init_Arrive_Model(config_dic['train_dir'], 
+    arrive_model = pred_Time_Model(config_dic['train_dir'], 
                                      config_dic['seismos_train'],
                                      config_dic['arrivals_train'],
                                      config_dic['batch_size'],
@@ -47,7 +47,7 @@ else:
         arrive_model = load_model('./models/arrival_prediction_model.h5')
     except:
         print('Error! Creating new model...')
-        arrive_model = init_Arrive_Model(config_dic['train_dir'], 
+        arrive_model = pred_Time_Model(config_dic['train_dir'], 
                                          config_dic['seismos_train'],
                                          config_dic['arrivals_train'],
                                          config_dic['batch_size'], 
@@ -60,7 +60,7 @@ for n, d in enumerate(config_dic['pred_dir']):
     # Looks for files in pred_dir directories, makes them into NumPy arrays for prediction of models
     print('Working on directory:', d)
     print('Making SAC files into arrays...')
-    make_arrays(d, config_dic['arrival_var'])
+    #make_arrays(d, config_dic['arrival_var'])
     files, pred_avg, pred_err, flipped = predict_arrival(arrive_model, d)
     
     #file = './pred_data/seismograms_' + d.split('/')[-2] + '.npy'

@@ -7,7 +7,6 @@ Created on Mon Aug 26 14:22:23 2019
 """
 import os
 import numpy as np
-import obspy
 from aux_funcs import check_string
 
 def predict_arrival(model, datadir):
@@ -56,3 +55,6 @@ def predict_arrival(model, datadir):
     flipped = np.asarray(flipped)
     
     return seis_names, pred_arrival, pred_error, flipped
+
+def predict_train_data(model, traindir):
+    return    

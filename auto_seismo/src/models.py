@@ -22,7 +22,7 @@ from keras.layers import Dense, Flatten, Conv1D, MaxPooling1D, BatchNormalizatio
 from keras.models import Sequential
 from aux_funcs import check_string
 
-def init_Arrive_Model(train_dir, seismos_train, arrivals_train, batch_size, epochs, model_iters, debug_mode=False):
+def pred_Time_Model(train_dir, seismos_train, arrivals_train, batch_size, epochs, model_iters, debug_mode=False):
     train_dir = check_string(train_dir)
     seismos_train = check_string(seismos_train)
     arrivals_train = check_string(arrivals_train)
@@ -76,9 +76,8 @@ def init_Arrive_Model(train_dir, seismos_train, arrivals_train, batch_size, epoc
         model.add(Dense(512, activation='relu'))
         model.add(Dense(1, activation='linear'))
         
-        model.compile(loss=tf.losses.huber_loss,#loss='mse',
-                      optimizer=keras.optimizers.Adam(),
-                      metrics=['accuracy'])
+        model.compile(loss=tf.losses.huber_loss,
+                      optimizer=keras.optimizers.Adam())
         
         model.fit(train_x, train_y,
                   batch_size=batch_size,

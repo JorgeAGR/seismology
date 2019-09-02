@@ -12,6 +12,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 
+
 golden_ratio = (np.sqrt(5) + 1) / 2
 width = 12
 height = width / golden_ratio
