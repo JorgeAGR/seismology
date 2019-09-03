@@ -22,7 +22,7 @@ datadir = '../train_data/'
 good = 'good/' # qual_var 1
 bad = 'bad/' # qual_var 0
 
-def make_arrays(datadir, qualtype, th_arrival_var, arrival_var, qual_var):
+def make_arrays(datadir, qualtype, th_arrival_var, arrival_var, qual_var, wave_type):
     
     resample_Hz = 10
     
@@ -31,7 +31,7 @@ def make_arrays(datadir, qualtype, th_arrival_var, arrival_var, qual_var):
     arrivals = []
     cut_time = []
     file_names = []
-    polarities = []
+    #polarities = []
     
     for i, file in enumerate(files):
         file = check_string(file)
@@ -56,17 +56,19 @@ def make_arrays(datadir, qualtype, th_arrival_var, arrival_var, qual_var):
             rand_window = np.random.rand(6)
             rand_window[0] = 0
             for j, n in enumerate(rand_window):
+                '''
                 pol = 1
                 if j > 2:
                     amp = -amp
                     pol = 0
+                '''
                 rand_arrival = th_arrival - n*2
                 init = np.where(rand_arrival - window_before < time)[0][0]
                 end = np.where(rand_arrival + window_after > time)[0][-1]
                 window_size = (window_before + window_after ) / seismogram.stats.delta
                 
                 while end-init > window_size:
-                    init += 1
+                    end += -1
                 
                 while end-init < window_size:
                     end += 1
@@ -78,36 +80,35 @@ def make_arrays(datadir, qualtype, th_arrival_var, arrival_var, qual_var):
                     amp_i = (amp_i - amp_i.min()) / (amp_i.max() - amp_i.min())
                     seismograms.append(amp_i)
                     arrivals.append(arrival - time[init])
-                    cut_time.append(rand_arrival)
+                    cut_time.append(time[init])
                     file_names.append(file)
-                    polarities.append(pol)
+                    #polarities.append(pol)
                 else:
                     continue
         
             
     seismograms = np.array(seismograms).reshape(len(seismograms), len(seismograms[0]), 1)
-    #seismograms = seismograms.reshape(len(seismograms), len(seismograms[0]), 1)
     arrivals = np.array(arrivals).reshape(len(arrivals), 1)
-    #arrivals = arrivals.reshape(len(arrivals), 1)
     cut_time = np.array(cut_time)
     qualities = np.ones(len(files)) * qual_var
     qualities = qualities.reshape(len(qualities), 1)
     file_names = np.array(file_names)
-    polarities = np.array(polarities)
+    #polarities = np.array(polarities)
     
-    np.save('../train_data/seismograms_' + th_arrival_var, seismograms)
-    np.save('../train_data/arrivals_' + th_arrival_var, arrivals)
-    np.save('../train_data/cut_times_' + th_arrival_var, cut_time)
-    np.save('../train_data/quality_' + th_arrival_var, qualities)
-    np.save('../train_data/file_names_' + th_arrival_var, file_names)
-    np.save('../train_data/polarities_' + th_arrival_var, polarities)
+    np.save('../train_data/seismograms_' + wave_type, seismograms)
+    np.save('../train_data/arrivals_' + wave_type, arrivals)
+    np.save('../train_data/cut_times_' + wave_type, cut_time)
+    #np.save('../train_data/quality_' + wave_type, qualities)
+    np.save('../train_data/file_names_' + wave_type, file_names)
+    #np.save('../train_data/polarities_' + wave_type, polarities)
 
-datadir = '../../seismograms/SS_kept/'
+datadir = '../../../seismograms/SS_kept/'
 qualtype = 'good'
 th_arrival_var = 't2'
 arrival_var = 't6'
 qual_var = 1
-make_arrays(datadir, qualtype, th_arrival_var, arrival_var, qual_var)
+wave_type = 'SS'
+make_arrays(datadir, qualtype, th_arrival_var, arrival_var, qual_var, wave_type)
 #make_arrays(bad, 't2')
 '''
 Deprecated version, just in case

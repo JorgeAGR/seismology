@@ -9,16 +9,20 @@ import os
 import numpy as np
 from aux_funcs import check_string
 
-def predict_arrival(model, datadir):
+def predict_arrival(model, datadir, debug_mode=False):
     name = datadir.split('/')[-2]
     name = check_string(name)
     npzdir = './pred_data/' + name + '/'
+    
+    files = os.listdir(npzdir)
+    if debug_mode:
+        files = files[:100]
     
     seis_names = []
     pred_arrival = []
     pred_error = []
     flipped = []
-    for file in os.listdir(npzdir):
+    for file in files:
         file = check_string(file)
         seismogram = np.load(npzdir + file)
         
@@ -56,5 +60,9 @@ def predict_arrival(model, datadir):
     
     return seis_names, pred_arrival, pred_error, flipped
 
-def predict_train_data(model, traindir):
-    return    
+def predict_train_data(model, train_file, debug_mode=False):
+    seismos = np.load(train_file)
+    if debug_mode:
+        seismos = seismos[:100]
+    preds = model.predict(seismos).flatten()
+    return preds

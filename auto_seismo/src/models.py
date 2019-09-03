@@ -16,11 +16,15 @@ J. Geophys. Res.-Solid Earth
 """
 import os
 import numpy as np
-import tensorflow as tf
-import keras
+from tensorflow.losses import huber_loss
+import keras.backend as tf
+from keras.optimizers import Adam
 from keras.layers import Dense, Flatten, Conv1D, MaxPooling1D, BatchNormalization
 from keras.models import Sequential
 from aux_funcs import check_string
+
+def abs_error(y_true, y_pred):
+    return tf.mean(tf.abs(y_true - y_pred))
 
 def pred_Time_Model(train_dir, seismos_train, arrivals_train, batch_size, epochs, model_iters, debug_mode=False):
     train_dir = check_string(train_dir)
@@ -76,8 +80,9 @@ def pred_Time_Model(train_dir, seismos_train, arrivals_train, batch_size, epochs
         model.add(Dense(512, activation='relu'))
         model.add(Dense(1, activation='linear'))
         
-        model.compile(loss=tf.losses.huber_loss,
-                      optimizer=keras.optimizers.Adam())
+        model.compile(loss=huber_loss,
+                      optimizer=Adam(),
+                      metrics=[abs_error])
         
         model.fit(train_x, train_y,
                   batch_size=batch_size,
@@ -111,6 +116,6 @@ def pred_Time_Model(train_dir, seismos_train, arrivals_train, batch_size, epochs
     model = models[best_model]
     np.save('./models/etc/model_train_test_index.npy', shuffled_indeces[best_model])
     print('Best Model Avg Diff:', models_means[best_model])
-    print('Best Model Avg Diff Error:', models_stds[best_model])
+    print('Best Model Avg Diff Uncertainty :', models_stds[best_model])
     
     return model

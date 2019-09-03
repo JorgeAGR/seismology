@@ -1,0 +1,2 @@
+#!/bin/bash
+python src/cluster_check_n_pred.py

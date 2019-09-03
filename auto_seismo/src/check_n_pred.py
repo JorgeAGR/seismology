@@ -12,12 +12,13 @@ import numpy as np
 from seismo_arrays import make_arrays
 from models import pred_Time_Model
 from make_pred import predict_arrival
-from aux_funcs import read_config
+from aux_funcs import read_config, make_dirs
 import csv
 from keras.models import load_model
 import keras.losses
 import tensorflow as tf
 
+make_dirs()
 
 config_dic = read_config('./cnn_config.txt')
 

@@ -1,2 +1,2 @@
 #!/bin/bash
-python scripts/check_n_pred.py
+python src/check_n_pred.py

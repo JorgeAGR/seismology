@@ -2,17 +2,17 @@
 # Unless you know what you're doing...
 
 # Model variables
-debug_mode:0
+debug_mode:1
 new_model:0
 batch_size:128
-epochs:10
-model_iters:3
+epochs:1
+model_iters:1
 
 # Training files to be used for the model
 train_dir:./train_data/
-seismos_train:seismograms_t2.npy
-arrivals_train:arrivals_t2.npy
-polarities_train:polarities_t2.npy
+seismos_train:seismograms_SS.npy
+arrivals_train:arrivals_SS.npy
+polarities_train:polarities_SS.npy
 
 # =================== FOR THE USER ========================== #
 # Change these as needed

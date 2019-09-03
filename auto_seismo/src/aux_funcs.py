@@ -5,7 +5,7 @@ Created on Wed Aug 28 16:34:34 2019
 
 @author: jorgeagr
 """
-
+import os
 # Safeguard for some systems
 def check_string(string):
     '''
@@ -14,6 +14,17 @@ def check_string(string):
         fixed_strings.append(string.rstrip('\r'))
     '''
     return string.rstrip('\r')
+
+def make_dirs():
+    directories = {'models': ['etc',], 'pred_data': None, 'results': None, 'src': None, 'train_data': ['etc',]}
+    
+    for key in directories:
+        if key not in os.listdir():
+            os.mkdir(key)
+        if type(directories[key]) == list:
+            for subdir in directories[key]:
+                if subdir not in os.listdir(key):
+                    os.mkdir(key + '/' + subdir)
 
 # Load cnn_config.txt file and reads the set values for variables to be used
 def read_config(file_path):
