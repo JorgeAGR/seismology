@@ -86,7 +86,7 @@ def make_arrays(datadir, qualtype, th_arrival_var, arrival_var, qual_var, wave_t
                 else:
                     continue
         
-            
+    
     seismograms = np.array(seismograms).reshape(len(seismograms), len(seismograms[0]), 1)
     arrivals = np.array(arrivals).reshape(len(arrivals), 1)
     cut_time = np.array(cut_time)

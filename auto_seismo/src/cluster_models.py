@@ -18,7 +18,7 @@ Temporary script for use in the NMSU cluster.
 """
 import os
 import numpy as np
-from tensorflow.losses import huber_loss
+import tensorflow as tflow
 import keras.backend as tf
 from keras.optimizers import Adam
 from keras.layers import Dense, Flatten, Conv1D, MaxPooling1D, BatchNormalization
@@ -85,7 +85,7 @@ def pred_Time_Model(train_dir, seismos_train, arrivals_train, batch_size, epochs
         model.add(Dense(512, activation='relu'))
         model.add(Dense(1, activation='linear'))
         
-        model.compile(loss=huber_loss,
+        model.compile(loss=tflow.losses.huber_loss,
                       optimizer=Adam(),
                       metrics=[abs_error])
         
