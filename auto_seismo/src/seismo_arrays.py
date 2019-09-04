@@ -16,7 +16,7 @@ from aux_funcs import check_string
 def make_arrays(datadir, th_arrival_var):
     name = datadir.split('/')[-2]
     name = check_string(name)
-    files = os.listdir(datadir)
+    files = np.sort(os.listdir(datadir))
     if name not in os.listdir('./pred_data/'):
         os.makedirs('./pred_data/' + name)
     

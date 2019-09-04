@@ -44,21 +44,9 @@ pred_avg = shifting_npz['pred_avg']
 pred_err = shifting_npz['pred_err']
 flipped = shifting_npz['flipped']
 
-simple_files = np.load('./train_data/file_names_SS.npy')
-sort_ind = np.argsort(simple_files)
-simple_npy = np.load('../train_data_simple_pred.npy')[sort_ind]
-simple_cuts = np.load('./train_data/cut_times_SS.npy')[sort_ind]
-simple_pred = simple_npy + simple_cuts
-
 actuals_npz = np.load('./train_data/etc/train_data_arrivals.npz')
 actuals_files = actuals_npz['files'].astype(np.str)
 arrivals = actuals_npz['arrivals']
-
-arrivals_large = []
-for i, file in enumerate(simple_files):
-    if file in actuals_files:
-        arrivals_large.append(arrivals[np.where(file == actuals_files)])
-arrivals_large = np.asarray(arrivals_large)
 
 avail_files = []
 avail_arrivals = []
@@ -70,7 +58,6 @@ dir_files = np.asarray(avail_files)
 arrivals = np.asarray(avail_arrivals)
 
 shift_error = pred_avg - arrivals
-simple_error = simple_pred - arrivals_large
 
 fig, ax = plt.subplots()
 weights = np.ones_like(shift_error)/len(shift_error)

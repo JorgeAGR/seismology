@@ -21,5 +21,5 @@ polarities_train:polarities_SS.npy
 # Directories of seismograms to predict for and the
 # corresponding arrival variable
 
-pred_dir:../../seismograms/seis_1/,../../seismograms/seis_2/
+pred_dir:../../seismograms/filt15-50/
 arrival_var:t2

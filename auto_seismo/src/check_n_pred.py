@@ -13,6 +13,7 @@ from seismo_arrays import make_arrays
 from models import pred_Time_Model
 from make_pred import predict_arrival
 from aux_funcs import read_config, make_dirs
+from write_pred import write_pred
 import csv
 from keras.models import load_model
 import keras.losses
@@ -61,14 +62,16 @@ for n, d in enumerate(config_dic['pred_dir']):
     # Looks for files in pred_dir directories, makes them into NumPy arrays for prediction of models
     print('Working on directory:', d)
     print('Making SAC files into arrays...')
-    #make_arrays(d, config_dic['arrival_var'])
+    make_arrays(d, config_dic['arrival_var'])
+    print('Predicting...')
     files, pred_avg, pred_err, flipped = predict_arrival(arrive_model, d)
+    print('Writing...')
+    write_pred(d, files, pred_avg)
     
     #file = './pred_data/seismograms_' + d.split('/')[-2] + '.npy'
     
     #name = d.split('/')[-2]
     # Predicts using the arrays made before, and saves predictions alongisde name of each file in a csv file
-    print('Predicting...')
     #pred = arrive_model.predict(np.load(file)).flatten()
     #arrival_times = np.load('./pred_data/cut_times_' + name + '.npy') + pred
     '''

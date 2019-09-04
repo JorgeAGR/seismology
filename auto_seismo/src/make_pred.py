@@ -14,7 +14,7 @@ def predict_arrival(model, datadir, debug_mode=False):
     name = check_string(name)
     npzdir = './pred_data/' + name + '/'
     
-    files = os.listdir(npzdir)
+    files = np.sort(os.listdir(npzdir))
     if debug_mode:
         files = files[:100]
     
@@ -46,7 +46,7 @@ def predict_arrival(model, datadir, debug_mode=False):
                      np.std(flip_preds + flips_cut_times)]
         
         correct_pred = np.argmin(pred_stds)
-        th_arrival = noflips_th_arrivals[0] + noflips_cut_times[0]
+        #th_arrival = noflips_th_arrivals[0] + noflips_cut_times[0]
         
         seis_names.append(file.rstrip('.npz'))
         pred_arrival.append(pred_means[correct_pred])
@@ -60,9 +60,33 @@ def predict_arrival(model, datadir, debug_mode=False):
     
     return seis_names, pred_arrival, pred_error, flipped
 
-def predict_train_data(model, train_file, debug_mode=False):
-    seismos = np.load(train_file)
+def predict_train_data(model, datadir, debug_mode=False):
+    
+    name = datadir.split('/')[-2]
+    name = check_string(name)
+    npzdir = './pred_data/' + name + '/'
+    
+    files = np.argsort(os.listdir(npzdir))
     if debug_mode:
-        seismos = seismos[:100]
-    preds = model.predict(seismos).flatten()
-    return preds
+        files = files[:100]
+    
+    seis_names = []
+    pred_arrival = []
+    for file in files:
+        file = check_string(file)
+        seismogram = np.load(npzdir + file)
+        
+        noflip = seismogram['noflips'][0]
+        noflip_cut_time = seismogram['cuts'][0]
+        
+        #pred = arrive_model.predict(np.load(file)).flatten()
+        noflip_pred = model.predict(np.reshape(noflip, 
+                                                (len(noflip), 1, 1))).flatten()
+        
+        seis_names.append(file.rstrip('.npz'))
+        pred_arrival.append(noflip_pred + noflip_cut_time)
+        
+    seis_names = np.asarray(seis_names)
+    pred_arrival = np.asarray(pred_arrival)
+    
+    return seis_names, pred_arrival

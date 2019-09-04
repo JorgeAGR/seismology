@@ -39,6 +39,6 @@ print('Shifting Window Pred:', np.mean(pred_avg), '+\-', np.std(pred_avg))
 np.savez('../train_data_shift_pred', files=files, pred_avg=pred_avg, 
          pred_err=pred_err, flipped=flipped)
 
-simple_pred = predict_train_data(arrive_model, './train_data/seismograms_SS.npy', config_dic['debug_mode'])
+simple_files, simple_pred = predict_train_data(arrive_model, './train_data/seismograms_SS.npy', config_dic['debug_mode'])
 print('Simple Pred:', np.mean(simple_pred), '+\-', np.std(simple_pred))
-np.save('../train_data_simple_pred', simple_pred)
+np.savez('../train_data_simple_pred', files=simple_files, pred=simple_pred)
