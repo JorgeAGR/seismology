@@ -7,6 +7,7 @@ Created on Tue Sep  3 23:31:49 2019
 import os
 import obspy
 import numpy as np
+import scipy as sp
 from aux_funcs import check_string
 
 def write_pred(datadir, files, preds):
@@ -17,9 +18,11 @@ def write_pred(datadir, files, preds):
     #files = np.sort(os.listdir(npzdir))
     for i, file in enumerate(files):
         seismogram = obspy.read(datadir + file + '.s_fil')
-        #shift = -preds[i]
-        #seismogram[0].stats.sac.b += shift
-        seismogram[0].stats.sac.t6 = preds[i]
+        data = seismogram[0].data
+        maxima = data[sp.signal.argrelmax(data)]
+        pred_time = preds[i]
+        pred_time = maxima[np.argmin(np.abs(maxima - pred_time))]
+        seismogram[0].stats.sac.t6 = pred_time
         #seismogram[0].stats.sac.e += shift
         seismogram.write(datadir + file + '.s_fil', format='SAC')
     

@@ -49,9 +49,6 @@ def predict_arrival(model, datadir, debug_mode=False):
         correct_pred = np.argmin(pred_stds)
         #th_arrival = noflips_th_arrivals[0] + noflips_cut_times[0]
         pred_time = pred_means[correct_pred]
-        seis = [noflips[0], flips[0]][correct_pred]
-        maxima = seis[sp.signal.argrelmax(seis)]
-        pred_time = np.abs(maxima - seis).min()
         
         seis_names.append(file.rstrip('.npz'))
         pred_arrival.append(pred_time)
