@@ -7,7 +7,6 @@ Created on Mon Aug 26 14:22:23 2019
 """
 import os
 import numpy as np
-import scipy as sp
 from aux_funcs import check_string
 
 def predict_arrival(model, datadir, debug_mode=False):
