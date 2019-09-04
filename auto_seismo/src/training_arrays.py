@@ -26,7 +26,7 @@ def make_arrays(datadir, qualtype, th_arrival_var, arrival_var, qual_var, wave_t
     
     resample_Hz = 10
     
-    files = os.listdir(datadir)
+    files = np.sort(os.listdir(datadir))
     seismograms = []
     arrivals = []
     cut_time = []
