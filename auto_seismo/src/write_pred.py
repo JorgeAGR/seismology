@@ -17,9 +17,12 @@ def write_pred(datadir, files, preds):
     #files = np.sort(os.listdir(npzdir))
     for i, file in enumerate(files):
         seismogram = obspy.read(datadir + file + '.s_fil')
-        shift = -preds[i]
-        seismogram[0].stats.sac.b += shift
-        seismogram[0].stats.sac.t6 = 0
-        seismogram[0].stats.sac.e += shift
+        #shift = -preds[i]
+        #seismogram[0].stats.sac.b += shift
+        seismogram[0].stats.sac.t6 = preds[i]
+        #seismogram[0].stats.sac.e += shift
         seismogram.write(datadir + file + '.s_fil', format='SAC')
+    
+    seis = obspy.read(datadir + file + '.s_fil')
+    print(seis[0].stats)
     return
