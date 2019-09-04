@@ -68,7 +68,7 @@ def predict_train_data(model, datadir, debug_mode=False):
     name = check_string(name)
     npzdir = './pred_data/' + name + '/'
     
-    files = np.argsort(os.listdir(npzdir))
+    files = np.sort(os.listdir(npzdir))
     if debug_mode:
         files = files[:100]
     

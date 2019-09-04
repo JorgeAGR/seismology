@@ -19,7 +19,7 @@ def make_dirs():
     directories = {'models': ['etc',], 'pred_data': None, 'results': None, 'src': None, 'train_data': ['etc',]}
     
     for key in directories:
-        if key not in os.listdir():
+        if key not in os.listdir('.'):
             os.mkdir(key)
         if type(directories[key]) == list:
             for subdir in directories[key]:
