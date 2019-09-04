@@ -83,7 +83,7 @@ def predict_train_data(model, datadir, debug_mode=False):
         
         #pred = arrive_model.predict(np.load(file)).flatten()
         noflip_pred = model.predict(np.reshape(noflip, 
-                                                (len(noflip), 1, 1))).flatten()
+                                                (1, len(noflip), 1))).flatten()
         
         seis_names.append(file.rstrip('.npz'))
         pred_arrival.append(noflip_pred + noflip_cut_time)
