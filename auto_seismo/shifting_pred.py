@@ -44,10 +44,10 @@ pred_avg = shifting_npz['pred_avg']
 pred_err = shifting_npz['pred_err']
 flipped = shifting_npz['flipped']
 
-actuals_npz = np.load('./train_data/etc/train_data_arrivals.npz')
+actuals_npz = np.load('../train_data_simple_pred.npy')
 actuals_files = actuals_npz['files'].astype(np.str)
 arrivals = actuals_npz['arrivals']
-
+'''
 avail_files = []
 avail_arrivals = []
 for i, file in enumerate(actuals_files):
@@ -70,3 +70,4 @@ cum_hist = ax2.hist(np.abs(shift_error), np.arange(0, 1.1, 0.001), histtype='ste
         color='black', linewidth=1, weights=weights, cumulative=True)
 ax2.axhline(0.95, linestyle='--', color='red')
 ax2.set_xlim(-0.01, 1)
+'''
