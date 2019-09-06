@@ -36,7 +36,7 @@ files = np.sort(os.listdir(directory))
 seis_files = files[0:4]
 
 keras.losses.huber_loss = huber_loss
-arrive_model = load_model('./models/arrival_prediction_model_noflip.h5')
+arrive_model = load_model('./models/arrival_prediction_model.h5')
 
 def make_pred(file, flip=False):
     seismogram = obspy.read(directory+file)[0]

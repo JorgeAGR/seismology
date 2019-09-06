@@ -28,46 +28,56 @@ mpl.rcParams['ytick.major.size'] = 12
 mpl.rcParams['ytick.minor.size'] = 8
 mpl.rcParams['ytick.labelsize'] = 24
 
-# Change to get actuals for files in shifting_npz
-def test_pred(datadir):
-    files = np.sort(os.listdir(datadir))
-    actuals = []
-    for file in os.listdir(datadir):
-        seismogram = obspy.read(datadir + file)[0]
-        actuals.append(seismogram.stats.sac.t6 - seismogram.stats.sac.b)
-    actuals = np.asarray(actuals)
-    return files, actuals
-
 shifting_npz = np.load('../train_data_shift_pred.npz')
 files = shifting_npz['files'].astype(np.str)
 pred_avg = shifting_npz['pred_avg']
 pred_err = shifting_npz['pred_err']
 flipped = shifting_npz['flipped']
 
-actuals_npz = np.load('../train_data_simple_pred.npy')
+simple_npz = np.load('../train_data_simple_pred.npz')
+simple_files = simple_npz['files'].astype(np.str)
+simple_pred = simple_npz['pred'].flatten()
+
+actuals_npz = np.load('./train_data/etc/train_data_arrivals.npz')
 actuals_files = actuals_npz['files'].astype(np.str)
-arrivals = actuals_npz['arrivals']
-'''
-avail_files = []
-avail_arrivals = []
-for i, file in enumerate(actuals_files):
-    if str(file.rstrip('.s_fil')) in files:
-        avail_files.append(file)
-        avail_arrivals.append(arrivals[i])
-dir_files = np.asarray(avail_files)
-arrivals = np.asarray(avail_arrivals)
+actuals_indeces = np.argsort(actuals_files)
+arrivals = actuals_npz['arrivals'][actuals_indeces]
 
 shift_error = pred_avg - arrivals
+simple_error = simple_pred - arrivals
 
 fig, ax = plt.subplots()
 weights = np.ones_like(shift_error)/len(shift_error)
-hist = ax.hist(shift_error, np.arange(-1, 1, 0.1), histtype='stepfilled', align='mid', 
-        color='black', linewidth=1, weights=weights, cumulative=False)
+shift_hist = ax.hist(shift_error, np.arange(-1, 1, 0.1), histtype='stepfilled', align='mid', 
+        color='black', linewidth=1, weights=weights, cumulative=False, label='Shifted Windows')
+simple_hist = ax.hist(simple_error, np.arange(-1, 1, 0.1), histtype='step', align='mid',
+               color='green', linewidth=2, weights=weights, cumulative=False, label='Single Window')
 ax.set_xlim(-1, 1)
+ax.set_ylim(0, 0.4)
+ax.xaxis.set_major_locator(mtick.MultipleLocator(0.5))
+ax.yaxis.set_major_locator(mtick.MultipleLocator(0.05))
+ax.xaxis.set_minor_locator(mtick.MultipleLocator(0.1))
+ax.yaxis.set_minor_locator(mtick.MultipleLocator(0.01))
+ax.set_xlabel(r'$t_{pred} - t_{actual}$')
+ax.set_ylabel('Fraction of counts')
+ax.legend()
+plt.tight_layout()
+fig.savefig('../figs/shift_v_simple_hist.svg', dpi=500)
 
 fig2, ax2 = plt.subplots()
-cum_hist = ax2.hist(np.abs(shift_error), np.arange(0, 1.1, 0.001), histtype='step', align='mid', 
-        color='black', linewidth=1, weights=weights, cumulative=True)
+shift_cum = ax2.hist(np.abs(shift_error), np.arange(0, 1.1, 0.001), histtype='step', align='mid', 
+        color='black', linewidth=2, weights=weights, cumulative=True, label='Shifted Windows')
+simple_cum = ax2.hist(np.abs(shift_error), np.arange(0, 1.1, 0.001), histtype='step', align='mid', 
+        color='green', linewidth=1.5, weights=weights, cumulative=True, linestyle='--', label='Single Window')
 ax2.axhline(0.95, linestyle='--', color='red')
 ax2.set_xlim(-0.01, 1)
-'''
+ax2.set_ylim(0, 1.05)
+ax2.xaxis.set_major_locator(mtick.MultipleLocator(0.5))
+ax2.yaxis.set_major_locator(mtick.MultipleLocator(0.2))
+ax2.xaxis.set_minor_locator(mtick.MultipleLocator(0.1))
+ax2.yaxis.set_minor_locator(mtick.MultipleLocator(0.05))
+ax2.set_xlabel(r'$|t_{pred} - t_{actual}|$')
+ax.set_ylabel('Fraction of counts')
+ax2.legend(loc='lower right')
+plt.tight_layout()
+fig2.savefig('../figs/shift_v_simple_cumhist.svg', dpi=500)
