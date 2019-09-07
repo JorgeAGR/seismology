@@ -21,17 +21,18 @@ import tensorflow as tf
 
 make_dirs()
 
-config_dic = read_config('./cnn_config.txt')
+config_dic = read_config('./config/cnn_config.txt')
 
 # Trains a new model if desired or if none present, else load the present one
+'''
 if config_dic['debug_mode'] == 1:
     print('Using debug mode...')
     arrive_model = pred_Time_Model(config_dic['train_dir'], 
                                      config_dic['seismos_train'],
                                      config_dic['arrivals_train'],
                                      128, 1, 1, debug_mode=True)
-    
-elif (config_dic['new_model'] == 1) or (len(os.listdir('./models/')) == 0):
+'''
+if (config_dic['new_model'] == 1) or (len(os.listdir('./models/')) == 0):
     print('Creating new model...')
     arrive_model = pred_Time_Model(config_dic['train_dir'], 
                                      config_dic['seismos_train'],
@@ -54,7 +55,8 @@ else:
                                          config_dic['arrivals_train'],
                                          config_dic['batch_size'], 
                                          config_dic['epochs'],
-                                         config_dic['model_iters'])
+                                         config_dic['model_iters'],
+                                         config_dic['debug_mode'])
 
         arrive_model.save('./models/arrival_prediction_model.h5')
 

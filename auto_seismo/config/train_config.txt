@@ -1,0 +1,4 @@
+datadir:../../seismograms/SS_kept/
+th_arrival:t2
+arrival_var:t6
+type:SS

@@ -16,11 +16,7 @@ Created on Tue Oct  2 22:35:00 2018
 import os
 import obspy
 import numpy as np
-from aux_funcs import check_string
-
-datadir = '../train_data/'
-good = 'good/' # qual_var 1
-bad = 'bad/' # qual_var 0
+from aux_funcs import check_string, read_config
 
 def make_arrays(datadir, qualtype, th_arrival_var, arrival_var, qual_var, wave_type):
     
@@ -31,7 +27,6 @@ def make_arrays(datadir, qualtype, th_arrival_var, arrival_var, qual_var, wave_t
     arrivals = []
     cut_time = []
     file_names = []
-    #polarities = []
     
     for i, file in enumerate(files):
         file = check_string(file)
@@ -56,12 +51,6 @@ def make_arrays(datadir, qualtype, th_arrival_var, arrival_var, qual_var, wave_t
             rand_window = np.random.rand(6)
             rand_window[0] = 0
             for j, n in enumerate(rand_window):
-                '''
-                pol = 1
-                if j > 2:
-                    amp = -amp
-                    pol = 0
-                '''
                 rand_arrival = th_arrival - n*2
                 init = np.where(rand_arrival - window_before < time)[0][0]
                 end = np.where(rand_arrival + window_after > time)[0][-1]
@@ -82,7 +71,6 @@ def make_arrays(datadir, qualtype, th_arrival_var, arrival_var, qual_var, wave_t
                     arrivals.append(arrival - time[init])
                     cut_time.append(time[init])
                     file_names.append(file)
-                    #polarities.append(pol)
                 else:
                     continue
         
@@ -93,23 +81,19 @@ def make_arrays(datadir, qualtype, th_arrival_var, arrival_var, qual_var, wave_t
     qualities = np.ones(len(files)) * qual_var
     qualities = qualities.reshape(len(qualities), 1)
     file_names = np.array(file_names)
-    #polarities = np.array(polarities)
     
     np.save('../train_data/seismograms_' + wave_type, seismograms)
     np.save('../train_data/arrivals_' + wave_type, arrivals)
     np.save('../train_data/cut_times_' + wave_type, cut_time)
-    #np.save('../train_data/quality_' + wave_type, qualities)
     np.save('../train_data/file_names_' + wave_type, file_names)
-    #np.save('../train_data/polarities_' + wave_type, polarities)
 
-datadir = '../../../seismograms/SS_kept/'
-qualtype = 'good'
-th_arrival_var = 't2'
-arrival_var = 't6'
-qual_var = 1
-wave_type = 'SS'
-make_arrays(datadir, qualtype, th_arrival_var, arrival_var, qual_var, wave_type)
-#make_arrays(bad, 't2')
+#datadir = '../../../seismograms/SS_kept/'
+#qualtype = 'good'
+#th_arrival_var = 't2'
+#arrival_var = 't6'
+#qual_var = 1
+#wave_type = 'SS'
+#make_arrays(datadir, qualtype, th_arrival_var, arrival_var, qual_var, wave_type)
 '''
 Deprecated version, just in case
 

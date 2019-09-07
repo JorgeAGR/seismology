@@ -31,10 +31,11 @@ mpl.rcParams['ytick.major.size'] = 12
 mpl.rcParams['ytick.minor.size'] = 8
 mpl.rcParams['ytick.labelsize'] = 24
 
-directory = '../../seismograms/seis_1/'
+directory = '../../seismograms/filt_picked/'
 files = np.sort(os.listdir(directory))
-seis_files = files[0:4]
+seis_files = files
 
+'''
 keras.losses.huber_loss = huber_loss
 arrive_model = load_model('./models/arrival_prediction_model.h5')
 
@@ -108,55 +109,25 @@ else:
     if save_gif:
         animated_flip.save('../figs/flipped_seis_pred.gif',
                            writer=animation.PillowWriter(fps=1))
-
 '''
+
 # Compare different files preds
-for flip in range(2):
-    for file in seis_files:
-        seismogram = obspy.read(directory+file)[0]
-        time = seismogram.times()
-        init = np.where(time > seismogram.stats.sac.t2 - 10 - seismogram.stats.sac.b)[0][0]
-        end = init + 1000
-        time = time[init:end] - time[init]
-        amp_i = seismogram.data[init:end]
-        if flip:
-            amp_i = -amp_i
-        amp_i = (amp_i - amp_i.min()) / (amp_i.max() - amp_i.min())
-        pred = arrive_model.predict(amp_i[:400].reshape((1, 400, 1))).flatten()[0]
-        actual = seismogram.stats.sac.t6 - seismogram.stats.sac.t2 + 10
-        fig, ax = plt.subplots()
-        ax.plot(time, amp_i)
-        ax.axvline(pred, color='black', linestyle='--', label='Prediction')
-        ax.axvline(actual, color='red', label='Actual')
-        ax.set_xlim(0, 100)
-        ax.set_ylim(-0.05, 1.05)
-        ax.xaxis.set_minor_locator(mtick.MultipleLocator(5))
-        ax.yaxis.set_minor_locator(mtick.MultipleLocator(0.1))
-        ax.set_xlabel('Time From Cut [s]')
-        ax.set_ylabel('Relative Amplitude')
-        plt.tight_layout()
-'''
-
-'''
-# Compare same file diff window predictions
-for i in range(10):
-    file = seis_files[0]
+for file in seis_files:
     seismogram = obspy.read(directory+file)[0]
     time = seismogram.times()
-    init = np.where(time > seismogram.stats.sac.t2 + np.random.rand()*8 - 10 - seismogram.stats.sac.b)[0][0]
-    end = init + 1000
-    time = time[init:end] - time[init]
+    init = np.where(time > (seismogram.stats.sac.t2 - 100 - seismogram.stats.sac.b))[0][0]
+    end = np.where(time > (seismogram.stats.sac.t2 + 100 - seismogram.stats.sac.b))[0][0]
+    shift = time[init]
+    time = time[init:end]# - time[init]
     amp_i = seismogram.data[init:end]
-    if i > 4:
-        amp_i = -amp_i
     amp_i = (amp_i - amp_i.min()) / (amp_i.max() - amp_i.min())
-    pred = arrive_model.predict(amp_i[:400].reshape((1, 400, 1))).flatten()[0]
-    actual = seismogram.stats.sac.t6 - seismogram.stats.sac.b - seismogram.times()[init]
+    pred = seismogram.stats.sac.t6 #- shift
+    theoretical = seismogram.stats.sac.t2 #- shift
     fig, ax = plt.subplots()
     ax.plot(time, amp_i)
-    ax.axvline(pred, color='black', linestyle='--', label='Prediction')
-    ax.axvline(actual, color='red', label='Actual')
-    ax.set_xlim(0, 100)
+    ax.axvline(theoretical, color='black', linestyle='--', label='t2')
+    ax.axvline(pred, color='red', label='t6')
+    ax.set_xlim(time[0], time[-1])
     ax.set_ylim(-0.05, 1.05)
     ax.xaxis.set_minor_locator(mtick.MultipleLocator(5))
     ax.yaxis.set_minor_locator(mtick.MultipleLocator(0.1))
@@ -164,4 +135,4 @@ for i in range(10):
     ax.set_ylabel('Relative Amplitude')
     plt.tight_layout()
     plt.close()
-'''
+    fig.savefig('../figs/pred_' + file + '.svg', dpi=500)
