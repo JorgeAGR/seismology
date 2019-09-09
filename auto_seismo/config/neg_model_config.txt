@@ -1,0 +1,23 @@
+# ================== DO NOT MODIFY ========================== #
+# Unless you know what you're doing...
+
+# === Negative Regression Model === #
+model_name:arrival_SS_neg_model
+model_type:regression
+debug_mode:1
+batch_size:128
+epochs:15
+model_iters:5
+
+# Training files to be used for the model
+train_dir:./train_data/
+seismos_train:seismograms_SS_flipped.npy
+arrivals_train:arrivals_SS.npy
+polarities_train:polarities_SS.npy
+
+# =================== FOR THE USER ========================== #
+# Change these as needed
+# Make sure directories always end with a forwardslash (/)!!!
+
+# Directories of seismograms to predict for and the
+# corresponding arrival variable

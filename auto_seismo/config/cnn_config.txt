@@ -2,6 +2,7 @@
 # Unless you know what you're doing...
 
 # Model variables
+model_name:arrival_SS_model
 debug_mode:1
 new_model:0
 batch_size:128

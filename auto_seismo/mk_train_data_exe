@@ -1,2 +1,2 @@
 #!/bin/bash
-python src/training_arrays.py
+python src/make_train_data.py

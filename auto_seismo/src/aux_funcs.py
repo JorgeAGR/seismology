@@ -8,15 +8,11 @@ Created on Wed Aug 28 16:34:34 2019
 import os
 # Safeguard for some systems
 def check_string(string):
-    '''
-    fixed_strings = []
-    for string in strings:
-        fixed_strings.append(string.rstrip('\r'))
-    '''
     return string.rstrip('\r')
 
 def make_dirs():
-    directories = {'models': ['etc',], 'pred_data': None, 'results': None, 'src': None, 'train_data': ['etc',]}
+    directories = {'models': ['etc',], 'pred_data': None, 'results': None,
+                   'src': None, 'train_data': ['etc',]}
     
     for key in directories:
         if key not in os.listdir('.'):

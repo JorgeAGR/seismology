@@ -57,7 +57,8 @@ def sort_Data(data_X, data_y, test_percent=0.15, debug_mode=False):
     return data
     
 
-def pred_Time_Model(train_dir, seismos_train, arrivals_train, batch_size, epochs, model_iters, debug_mode=False):
+def pred_Time_Model(model_name, train_dir, seismos_train, arrivals_train, 
+                    batch_size, epochs, model_iters, debug_mode=False):
     train_dir = check_string(train_dir)
     seismos_train = check_string(seismos_train)
     arrivals_train = check_string(arrivals_train)
@@ -70,8 +71,10 @@ def pred_Time_Model(train_dir, seismos_train, arrivals_train, batch_size, epochs
         model_iters=1
     
     models = []
-    models_means = []
-    models_stds = []
+    models_train_means = []
+    models_train_stds = []
+    models_test_means = []
+    models_test_stds = []
     train_indeces = []
     test_indeces = []
     blind_indeces = []
@@ -112,34 +115,44 @@ def pred_Time_Model(train_dir, seismos_train, arrivals_train, batch_size, epochs
         train_pred = model.predict(data['train_x'])
         test_pred = model.predict(data['test_x'])
         
-        model_train_mean = np.mean(np.abs(data['train_y'] - train_pred))
-        model_train_std = np.std(np.abs(data['train_y'] - train_pred))
-        model_test_mean = np.mean(np.abs(data['test_y'] - test_pred))
-        model_test_std = np.std(np.abs(data['test_y'] - test_pred))
+        model_train_diff = np.abs(data['train_y'] - train_pred)
+        model_test_diff = np.abs(data['test_y'] - test_pred)
+        model_train_mean = np.mean(model_train_diff)
+        model_train_std = np.std(model_train_diff)
+        model_test_mean = np.mean(model_test_diff)
+        model_test_std = np.std(model_test_diff)
         
         print('Train Error:', model_train_mean, '+/-', model_train_std)
         print('Test Error:', model_test_mean, '+/-', model_test_std)
         
         models.append(model)
-        models_means.append(model_train_mean)
-        models_stds.append(model_train_std)
+        models_train_means.append(model_train_mean)
+        models_train_stds.append(model_train_std)
+        models_test_means.append(model_test_mean)
+        models_test_stds.append(model_test_std)
         train_indeces.append(data['train_index'])
         test_indeces.append(data['test_index'])
         blind_indeces.append(data['blind_index'])
         
-        model_name = './models/pred_model_' + str(m) + '.h5'
-        if debug_mode:
-            model_name += '_debug'
+        #model_name = './models/pred_model_' + str(m) + '.h5'
+        #if debug_mode:
+        #    model_name += '_debug'
         
         #model.save(model_name)
     
     #best_model = np.argsort(models_means)[-1]
-    best_model = np.argmin(models_means)
-    print('Using best model: Model', best_model)
+    best_model = np.argmin(models_train_means)
+    print('Using best model: Model', best_model + 1)
+    print('Best Model Results:')
+    print('Training Avg Diff:', models_train_means[best_model])
+    print('Training Avg Diff Uncertainty :', models_train_stds[best_model])
+    print('Testing Avg Diff:', models_test_means[best_model])
+    print('Testing Avg Diff Uncertainty:', models_test_stds[best_model])
+    print('\n')
     model = models[best_model]
-    np.savez('./models/etc/model_data_indeces', train_index=train_indeces[best_model],
+    model.save('./models/' + model_name + '.h5')
+    np.savez('./models/etc/' + model_name + '_data_indeces', train_index=train_indeces[best_model],
              test_index=train_indeces[best_model], blind_index = blind_indeces[best_model])
-    print('Best Model Avg Diff:', models_means[best_model])
-    print('Best Model Avg Diff Uncertainty :', models_stds[best_model])
     
-    return model
+    return
+    

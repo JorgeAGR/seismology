@@ -41,13 +41,13 @@ if (config_dic['new_model'] == 1) or (len(os.listdir('./models/')) == 0):
                                      config_dic['epochs'],
                                      config_dic['model_iters'])
 
-    arrive_model.save('./models/arrival_prediction_model.h5')
+    arrive_model.save('./models/'+ config_dic['model_name'] +'.h5')
     
 else:
     print('Loading model...')
     try:
         keras.losses.huber_loss = tf.losses.huber_loss
-        arrive_model = load_model('./models/arrival_prediction_model.h5')
+        arrive_model = load_model('./models/'+ config_dic['model_name'] +'.h5')
     except:
         print('Error! Creating new model...')
         arrive_model = pred_Time_Model(config_dic['train_dir'], 
@@ -58,7 +58,7 @@ else:
                                          config_dic['model_iters'],
                                          config_dic['debug_mode'])
 
-        arrive_model.save('./models/arrival_prediction_model.h5')
+        arrive_model.save('./models/' + config_dic['model_name'] + '.h5')
 
 for n, d in enumerate(config_dic['pred_dir']):
     # Looks for files in pred_dir directories, makes them into NumPy arrays for prediction of models
