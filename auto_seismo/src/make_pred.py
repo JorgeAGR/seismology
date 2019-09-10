@@ -7,11 +7,11 @@ Created on Mon Aug 26 14:22:23 2019
 """
 import os
 import numpy as np
-from aux_funcs import check_string
+from aux_funcs import check_String
 
-def predict_arrival(model, datadir, debug_mode=False):
+def predict_Arrival(model, datadir, debug_mode=False):
     name = datadir.split('/')[-2]
-    name = check_string(name)
+    name = check_String(name)
     npzdir = './pred_data/' + name + '/'
     
     files = np.sort(os.listdir(npzdir))
@@ -23,7 +23,7 @@ def predict_arrival(model, datadir, debug_mode=False):
     pred_error = []
     flipped = []
     for file in files:
-        file = check_string(file)
+        file = check_String(file)
         seismogram = np.load(npzdir + file)
         
         noflips = seismogram['noflips']
@@ -45,7 +45,10 @@ def predict_arrival(model, datadir, debug_mode=False):
         pred_stds = [np.std(noflip_preds + noflips_cut_times), 
                      np.std(flip_preds + flips_cut_times)]
         
-        correct_pred = np.argmin(pred_stds)
+        if 0.5 > pred_stds[0]/pred_stds[1] > 1.5:
+            correct_pred = np.argmin(pred_means)
+        else:
+            correct_pred = np.argmin(pred_stds)
         #th_arrival = noflips_th_arrivals[0] + noflips_cut_times[0]
         pred_time = pred_means[correct_pred]
         
@@ -61,10 +64,10 @@ def predict_arrival(model, datadir, debug_mode=False):
     
     return seis_names, pred_arrival, pred_error, flipped
 
-def predict_train_data(model, datadir, debug_mode=False):
+def predict_Train_Data(model, datadir, debug_mode=False):
     
     name = datadir.split('/')[-2]
-    name = check_string(name)
+    name = check_String(name)
     npzdir = './pred_data/' + name + '/'
     
     files = np.sort(os.listdir(npzdir))
@@ -74,7 +77,7 @@ def predict_train_data(model, datadir, debug_mode=False):
     seis_names = []
     pred_arrival = []
     for file in files:
-        file = check_string(file)
+        file = check_String(file)
         seismogram = np.load(npzdir + file)
         
         noflip = seismogram['noflips'][0]

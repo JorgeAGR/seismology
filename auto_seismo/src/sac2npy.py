@@ -8,7 +8,7 @@ Created on Thu Jan 17 14:23:29 2019
 import os
 import obspy
 import numpy as np
-from aux_funcs import check_string
+from aux_funcs import check_String
 
 def training_Arrays(datadir, qualtype, th_arrival_var, arrival_var, qual_var, wave_type):
     
@@ -21,7 +21,7 @@ def training_Arrays(datadir, qualtype, th_arrival_var, arrival_var, qual_var, wa
     file_names = []
     
     for i, file in enumerate(files):
-        file = check_string(file)
+        file = check_String(file)
         print(i+1, '/', len(files))
         seismogram = obspy.read(datadir + file)
         seismogram = seismogram[0].resample(resample_Hz).detrend()
@@ -89,14 +89,14 @@ def training_Arrays(datadir, qualtype, th_arrival_var, arrival_var, qual_var, wa
 
 def make_Arrays(datadir, th_arrival_var):
     name = datadir.split('/')[-2]
-    name = check_string(name)
+    name = check_String(name)
     files = np.sort(os.listdir(datadir))
     if name not in os.listdir('./pred_data/'):
         os.makedirs('./pred_data/' + name)
     
     resample_Hz = 10
     for i, file in enumerate(files):
-        file = check_string(file)
+        file = check_String(file)
         noflips = []
         flips = []
         cut_times = []

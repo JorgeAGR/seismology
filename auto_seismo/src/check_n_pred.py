@@ -8,67 +8,47 @@ Created on Tue Oct  2 22:35:00 2018
 
 import os
 import numpy as np
-#import sac2npy
-from seismo_arrays import make_arrays
-from models import pred_Time_Model
-from make_pred import predict_arrival
-from aux_funcs import read_config, make_dirs
-from write_pred import write_pred
+from sac2npy import make_Arrays
+from make_pred import predict_Arrival
+from aux_funcs import read_Config, make_Dirs
+from write_pred import write_Pred
 import csv
 from keras.models import load_model
 import keras.losses
-import tensorflow as tf
+import keras.metrics
+from tensorflow.losses import huber_loss
 
-make_dirs()
+#temp line to use models... remove trace of abs_error until it works?
+from models import abs_Error
 
-config_dic = read_config('./config/cnn_config.txt')
+make_Dirs()
 
-# Trains a new model if desired or if none present, else load the present one
-'''
-if config_dic['debug_mode'] == 1:
-    print('Using debug mode...')
-    arrive_model = pred_Time_Model(config_dic['train_dir'], 
-                                     config_dic['seismos_train'],
-                                     config_dic['arrivals_train'],
-                                     128, 1, 1, debug_mode=True)
-'''
-if (config_dic['new_model'] == 1) or (len(os.listdir('./models/')) == 0):
-    print('Creating new model...')
-    arrive_model = pred_Time_Model(config_dic['train_dir'], 
-                                     config_dic['seismos_train'],
-                                     config_dic['arrivals_train'],
-                                     config_dic['batch_size'],
-                                     config_dic['epochs'],
-                                     config_dic['model_iters'])
+config_dic = read_Config('./config/pred_config.txt')
 
-    arrive_model.save('./models/'+ config_dic['model_name'] +'.h5')
+print('Loading model...')
+try:
+    keras.losses.huber_loss = huber_loss
+    keras.metrics.abs_error = abs_Error
+    print(config_dic['model_name'])
+    arrive_model = load_model('./models/'+ config_dic['model_name'] +'.h5')
     
-else:
-    print('Loading model...')
-    try:
-        keras.losses.huber_loss = tf.losses.huber_loss
-        arrive_model = load_model('./models/'+ config_dic['model_name'] +'.h5')
-    except:
-        print('Error! Creating new model...')
-        arrive_model = pred_Time_Model(config_dic['train_dir'], 
-                                         config_dic['seismos_train'],
-                                         config_dic['arrivals_train'],
-                                         config_dic['batch_size'], 
-                                         config_dic['epochs'],
-                                         config_dic['model_iters'],
-                                         config_dic['debug_mode'])
-
-        arrive_model.save('./models/' + config_dic['model_name'] + '.h5')
+except Exception as err:
+    print(err)
+    print('Error! Use an existing model or create a new one.')
+    quit()
 
 for n, d in enumerate(config_dic['pred_dir']):
     # Looks for files in pred_dir directories, makes them into NumPy arrays for prediction of models
     print('Working on directory:', d)
     print('Making SAC files into arrays...')
-    make_arrays(d, config_dic['arrival_var'])
+    make_Arrays(d, config_dic['arrival_var'])
     print('Predicting...')
-    files, pred_avg, pred_err, flipped = predict_arrival(arrive_model, d)
+    files, pred_avg, pred_err, flipped = predict_Arrival(arrive_model, d)
     print('Writing...')
-    write_pred(d, files, pred_avg)
+    write_Pred(d, files, pred_avg, flipped)
+    
+    
+    
     
     #file = './pred_data/seismograms_' + d.split('/')[-2] + '.npy'
     

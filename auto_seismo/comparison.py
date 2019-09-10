@@ -135,4 +135,4 @@ for file in seis_files:
     ax.set_ylabel('Relative Amplitude')
     plt.tight_layout()
     plt.close()
-    fig.savefig('../figs/pred_' + file + '.svg', dpi=500)
+    fig.savefig('../figs/etc/pred_' + file + '.svg', dpi=500)

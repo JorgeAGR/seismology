@@ -9,15 +9,15 @@ Created on Mon Sep  9 11:11:12 2019
 import os
 import numpy as np
 from models import pred_Time_Model
-from aux_funcs import read_config, make_dirs
+from aux_funcs import read_Config, make_Dirs
 import tensorflow as tf
 from keras.backend import tensorflow_backend as tfb
 
-make_dirs()
+make_Dirs()
 
-tf_config = read_config('./config/tf_config.txt')
-pos_config = read_config('./config/pos_model_config.txt')
-neg_config = read_config('./config/neg_model_config.txt')
+tf_config = read_Config('./config/tf_config.txt')
+pos_config = read_Config('./config/pos_model_config.txt')
+neg_config = read_Config('./config/neg_model_config.txt')
 
 models = (pos_config, neg_config)
 
