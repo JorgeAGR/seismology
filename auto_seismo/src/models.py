@@ -152,7 +152,7 @@ def pred_Time_Model(model_name, train_dir, seismos_train, arrivals_train,
     model = models[best_model]
     model.save('./models/' + model_name + '.h5')
     np.savez('./models/etc/' + model_name + '_data_indeces', train_index=train_indeces[best_model],
-             test_index=train_indeces[best_model], blind_index = blind_indeces[best_model])
+             test_index=test_indeces[best_model], blind_index = blind_indeces[best_model])
     
     return
 
