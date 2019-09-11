@@ -28,7 +28,7 @@ config_dic = read_Config('./config/pred_config.txt')
 print('Loading model...')
 try:
     keras.losses.huber_loss = huber_loss
-    keras.metrics.abs_error = abs_Error
+    keras.metrics.abs_error = abs_Error # temp line
     print(config_dic['model_name'])
     arrive_model = load_model('./models/'+ config_dic['model_name'] +'.h5')
     

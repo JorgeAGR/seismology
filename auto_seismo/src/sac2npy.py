@@ -10,7 +10,8 @@ import obspy
 import numpy as np
 from aux_funcs import check_String
 
-def training_Arrays(datadir, qualtype, th_arrival_var, arrival_var, qual_var, wave_type):
+def training_Arrays(datadir, qualtype, th_arrival_var, arrival_var, 
+                    qual_var, wave_type, w_b=10, w_a=30):
     
     resample_Hz = 10
     
@@ -33,13 +34,13 @@ def training_Arrays(datadir, qualtype, th_arrival_var, arrival_var, qual_var, wa
         arrival = seismogram.stats.sac[arrival_var] + shift
         
         if not (b < th_arrival < e):
-            th_arrival = arrival - 2
+            th_arrival = arrival - 10
         
         if b < arrival < e:
             amp = seismogram.data
             time = seismogram.times()
-            window_before = 10 # seconds before th_arrival
-            window_after = 30 # ditto after ditto
+            window_before = w_b # seconds before th_arrival
+            window_after = w_a # ditto after ditto
             rand_window = np.random.rand(6)
             rand_window[0] = 0
             for j, n in enumerate(rand_window):
@@ -56,6 +57,8 @@ def training_Arrays(datadir, qualtype, th_arrival_var, arrival_var, qual_var, wa
                 
                 time_i = time[init]
                 time_f = time[end]
+                while rand_arrival < time[init]:
+                    rand_arrival += 0.1
                 if (time_i < arrival < time_f) and (time_i < rand_arrival < time_f):
                     amp_i = amp[init:end]
                     amp_i = (amp_i - amp_i.min()) / (amp_i.max() - amp_i.min())

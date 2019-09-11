@@ -9,15 +9,12 @@ batch_size:128
 epochs:15
 model_iters:5
 
-# Training files to be used for the model
-train_dir:./train_data/
-seismos_train:seismograms_SS.npy
-arrivals_train:arrivals_SS.npy
-polarities_train:polarities_SS.npy
-
 # =================== FOR THE USER ========================== #
 # Change these as needed
 # Make sure directories always end with a forwardslash (/)!!!
 
-# Directories of seismograms to predict for and the
-# corresponding arrival variable
+# Training files to be used for the model
+train_dir:./train_data/
+seismos_train:seismograms_SS_0025.npy
+arrivals_train:arrivals_SS_0025.npy
+polarities_train:polarities_SS_0025.npy

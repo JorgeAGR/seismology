@@ -14,4 +14,5 @@ make_Dirs()
 train_config = read_Config('./config/train_data_config.txt')
 
 training_Arrays(train_config['datadir'], 'good', train_config['th_arrival'], 
-                train_config['arrival_var'], 1, train_config['type'])
+                train_config['arrival_var'], 1, train_config['type'], 
+                w_b=train_config['window_before'], w_a=train_config['window_after'])

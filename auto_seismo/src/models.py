@@ -31,7 +31,7 @@ def sort_Data(data_X, data_y, test_percent=0.15, debug_mode=False):
     rand_index = np.arange(0, len(data_X), 1)
     np.random.shuffle(rand_index)
     
-    cutoff = int(len(data_X) - len(data_X) * test_percent)
+    cutoff = int(len(data_X) * (1 - test_percent))
     train_ind = rand_index[:cutoff]
     test_ind = rand_index[cutoff:-50]
     blind_ind = rand_index[-50:]
@@ -67,17 +67,22 @@ def pred_Time_Model(model_name, train_dir, seismos_train, arrivals_train,
     arrivals = np.load(train_dir + arrivals_train)
     
     if debug_mode:
-        epochs=1
+        epochs=5
         model_iters=1
     
     models = []
-    models_train_means = []
-    models_train_stds = []
-    models_test_means = []
-    models_test_stds = []
+    models_train_means = np.zeros(model_iters)
+    models_train_stds = np.zeros(model_iters)
+    models_test_means = np.zeros(model_iters)
+    models_test_stds = np.zeros(model_iters)
+    
     train_indices = []
     test_indices = []
     blind_indices = []
+    
+    models_train_lpe = np.zeros((model_iters, epochs))
+    models_test_lpe = np.zeros((model_iters, epochs))
+
     for m in range(model_iters):
         
         data = sort_Data(seismograms, arrivals, debug_mode=debug_mode)
@@ -104,13 +109,14 @@ def pred_Time_Model(model_name, train_dir, seismos_train, arrivals_train,
         model.add(Dense(1, activation='linear'))
         
         model.compile(loss=huber_loss,
-                      optimizer=Adam(),
-                      metrics=[abs_Error])
+                      optimizer=Adam())
+                      #metrics=[abs_Error])
         
-        model.fit(data['train_x'], data['train_y'],
-                  batch_size=batch_size,
-                  epochs=epochs,
-                  verbose=1,)
+        train_hist = model.fit(data['train_x'], data['train_y'],
+                               validation_data=(data['test_x'], data['test_y']),
+                               batch_size=batch_size,
+                               epochs=epochs,
+                               verbose=2,)
         
         train_pred = model.predict(data['train_x'])
         test_pred = model.predict(data['test_x'])
@@ -126,13 +132,15 @@ def pred_Time_Model(model_name, train_dir, seismos_train, arrivals_train,
         print('Test Error:', model_test_mean, '+/-', model_test_std)
         
         models.append(model)
-        models_train_means.append(model_train_mean)
-        models_train_stds.append(model_train_std)
-        models_test_means.append(model_test_mean)
-        models_test_stds.append(model_test_std)
+        models_train_means[m] += model_train_mean
+        models_train_stds[m] += model_train_std
+        models_test_means[m] += model_test_mean
+        models_test_stds[m] += model_test_std
         train_indices.append(data['train_index'])
         test_indices.append(data['test_index'])
         blind_indices.append(data['blind_index'])
+        models_train_lpe[m] = train_hist.history['loss']
+        models_test_lpe[m] = train_hist.history['val_loss']
         
         #model_name = './models/pred_model_' + str(m) + '.h5'
         #if debug_mode:
@@ -153,6 +161,8 @@ def pred_Time_Model(model_name, train_dir, seismos_train, arrivals_train,
     model.save('./models/' + model_name + '.h5')
     np.savez('./models/etc/' + model_name + '_data_indices', train_index=train_indices[best_model],
              test_index=test_indices[best_model], blind_index = blind_indices[best_model])
+    np.savez('./models/etc/' + model_name + '_training_log', loss=models_train_lpe[best_model],
+             val_loss=models_test_lpe[best_model])
     
     return
 

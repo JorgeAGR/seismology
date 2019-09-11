@@ -1,10 +1,5 @@
-# ================== DO NOT MODIFY ========================== #
-# Unless you know what you're doing...
-
-
 # =================== FOR THE USER ========================== #
 # Change these as needed
-# Make sure directories always end with a forwardslash (/)!!!
 
 # gpu - 0=Use CPU, 1=Use GPU
 # Nodes can be thought as nodes for a cluster, CPUs for a PC
