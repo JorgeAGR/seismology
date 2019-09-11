@@ -75,9 +75,9 @@ def pred_Time_Model(model_name, train_dir, seismos_train, arrivals_train,
     models_train_stds = []
     models_test_means = []
     models_test_stds = []
-    train_indeces = []
-    test_indeces = []
-    blind_indeces = []
+    train_indices = []
+    test_indices = []
+    blind_indices = []
     for m in range(model_iters):
         
         data = sort_Data(seismograms, arrivals, debug_mode=debug_mode)
@@ -130,9 +130,9 @@ def pred_Time_Model(model_name, train_dir, seismos_train, arrivals_train,
         models_train_stds.append(model_train_std)
         models_test_means.append(model_test_mean)
         models_test_stds.append(model_test_std)
-        train_indeces.append(data['train_index'])
-        test_indeces.append(data['test_index'])
-        blind_indeces.append(data['blind_index'])
+        train_indices.append(data['train_index'])
+        test_indices.append(data['test_index'])
+        blind_indices.append(data['blind_index'])
         
         #model_name = './models/pred_model_' + str(m) + '.h5'
         #if debug_mode:
@@ -151,8 +151,8 @@ def pred_Time_Model(model_name, train_dir, seismos_train, arrivals_train,
     print('\n')
     model = models[best_model]
     model.save('./models/' + model_name + '.h5')
-    np.savez('./models/etc/' + model_name + '_data_indeces', train_index=train_indeces[best_model],
-             test_index=test_indeces[best_model], blind_index = blind_indeces[best_model])
+    np.savez('./models/etc/' + model_name + '_data_indices', train_index=train_indices[best_model],
+             test_index=test_indices[best_model], blind_index = blind_indices[best_model])
     
     return
 
@@ -175,9 +175,9 @@ def classify_Polarity_Model(model_name, train_dir, seismos_train, arrivals_train
     models_train_stds = []
     models_test_means = []
     models_test_stds = []
-    train_indeces = []
-    test_indeces = []
-    blind_indeces = []
+    train_indices = []
+    test_indices = []
+    blind_indices = []
     for m in range(model_iters):
         
         data = sort_Data(seismograms, arrivals, debug_mode=debug_mode)
@@ -230,9 +230,9 @@ def classify_Polarity_Model(model_name, train_dir, seismos_train, arrivals_train
         models_train_stds.append(model_train_std)
         models_test_means.append(model_test_mean)
         models_test_stds.append(model_test_std)
-        train_indeces.append(data['train_index'])
-        test_indeces.append(data['test_index'])
-        blind_indeces.append(data['blind_index'])
+        train_indices.append(data['train_index'])
+        test_indices.append(data['test_index'])
+        blind_indices.append(data['blind_index'])
         
         #model_name = './models/pred_model_' + str(m) + '.h5'
         #if debug_mode:
@@ -251,8 +251,8 @@ def classify_Polarity_Model(model_name, train_dir, seismos_train, arrivals_train
     print('\n')
     model = models[best_model]
     model.save('./models/' + model_name + '.h5')
-    np.savez('./models/etc/' + model_name + '_data_indeces', train_index=train_indeces[best_model],
-             test_index=train_indeces[best_model], blind_index = blind_indeces[best_model])
+    np.savez('./models/etc/' + model_name + '_data_indices', train_index=train_indices[best_model],
+             test_index=train_indices[best_model], blind_index = blind_indices[best_model])
     
     return
     
