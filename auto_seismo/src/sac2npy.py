@@ -64,7 +64,7 @@ def training_Arrays(datadir, qualtype, th_arrival_var, arrival_var,
                 '''
                 if (time_i < arrival < time_f) and (time_i < rand_arrival < time_f):
                     amp_p = amp[init:end]
-                    amp_n = -amp
+                    amp_n = -amp_p
                     amp_p = (amp_p - amp_p.min()) / (amp_p.max() - amp_p.min())
                     amp_n = (amp_n - amp_n.min()) / (amp_n.max() - amp_n.min())
                     seismograms.append(amp_p)
