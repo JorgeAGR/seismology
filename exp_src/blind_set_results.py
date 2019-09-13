@@ -33,14 +33,14 @@ mpl.rcParams['ytick.labelsize'] = 24
 
 keras.losses.huber_loss = huber_loss
 keras.metrics.abs_error = abs_Error
-pos_model = load_model('../auto_seismo/models/arrival_SS_pos_model.h5')
-neg_model = load_model('../auto_seismo/models/arrival_SS_neg_model.h5')
+pos_model = load_model('../auto_seismo/models/arrival_SS_pos_model_1030.h5')
+neg_model = load_model('../auto_seismo/models/arrival_SS_neg_model_1030.h5')
 
 pos_model_ind = np.load('../auto_seismo/models/etc/arrival_SS_pos_model_1030_data_indices.npz')
 neg_model_ind = np.load('../auto_seismo/models/etc/arrival_SS_neg_model_1030_data_indices.npz')
 
 seismograms = np.load('../auto_seismo/train_data/seismograms_SS_1030.npy')
-seismograms_flip = np.load('../auto_seismo/train_data/seismograms_SS_1030_flipped.npy')
+seismograms_flip = np.load('../auto_seismo/train_data/seismograms_flipped_SS_1030.npy')
 arrivals = np.load('../auto_seismo/train_data/arrivals_SS_1030.npy')
 
 blind_pos_seis = seismograms[pos_model_ind['blind_index']].reshape(len(pos_model_ind['blind_index']), len(seismograms[0]), 1)
@@ -56,5 +56,5 @@ files = np.load('../auto_seismo/train_data/file_names_SS_1030.npy')
 pos_files = files[pos_model_ind['blind_index']]
 neg_files = files[neg_model_ind['blind_index']]
 
-pos_shift_pred = predict_Arrival(pos_model, '/SS_kept/', files=pos_files)
-neg_shift_pred = predict_Arrival(neg_model, '/SS_kept/', files=neg_files)
+pos_shift_pred = predict_Arrival('/SS_kept/', files=pos_files)
+neg_shift_pred = predict_Arrival('/SS_kept/', files=neg_files)

@@ -3,12 +3,14 @@
 # Change these as needed
 # Make sure directories always end with a forwardslash (/)!!!
 
-# Name of model to be used (end with '.h5'):
+# Name of models to be used (no need to end with '.h5'):
 
-model_name:arrival_SS_model
-
+model_names:arrival_SS_pos_model_0025,arrival_SS_neg_model_0025
+window_before:0
+window_after:25
 # Directories of seismograms to predict for and the
 # corresponding arrival variable
 
 pred_dir:../../seismograms/filt_picked/
 arrival_var:t2
+prediction_var:t7

@@ -35,10 +35,10 @@ directory = '../../seismograms/filt_picked/'
 files = np.sort(os.listdir(directory))
 seis_files = files
 
-'''
-keras.losses.huber_loss = huber_loss
-arrive_model = load_model('./models/arrival_prediction_model.h5')
 
+keras.losses.huber_loss = huber_loss
+arrive_model = load_model('../auto_seismo/models/arrival_SS_pos_model_0025.h5')
+'''
 def make_pred(file, flip=False):
     seismogram = obspy.read(directory+file)[0]
     time = seismogram.times()
@@ -111,7 +111,6 @@ else:
                            writer=animation.PillowWriter(fps=1))
 '''
 
-# Compare different files preds
 for file in seis_files:
     seismogram = obspy.read(directory+file)[0]
     time = seismogram.times()
@@ -121,12 +120,13 @@ for file in seis_files:
     time = time[init:end]# - time[init]
     amp_i = seismogram.data[init:end]
     amp_i = (amp_i - amp_i.min()) / (amp_i.max() - amp_i.min())
-    pred = seismogram.stats.sac.t6 #- shift
+    pred = seismogram.stats.sac.t7 #- shift
     theoretical = seismogram.stats.sac.t2 #- shift
     fig, ax = plt.subplots()
     ax.plot(time, amp_i)
     ax.axvline(theoretical, color='black', linestyle='--', label='t2')
     ax.axvline(pred, color='red', label='t6')
+    ax.axvline(simple_pred, color='red', linestyle='..', label='simple')
     ax.set_xlim(time[0], time[-1])
     ax.set_ylim(-0.05, 1.05)
     ax.xaxis.set_minor_locator(mtick.MultipleLocator(5))

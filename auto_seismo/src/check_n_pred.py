@@ -29,8 +29,10 @@ print('Loading model...')
 try:
     keras.losses.huber_loss = huber_loss
     keras.metrics.abs_error = abs_Error # temp line
-    print(config_dic['model_name'])
-    arrive_model = load_model('./models/'+ config_dic['model_name'] +'.h5')
+    models = []
+    for m in config_dic['model_names']:
+        print(m)
+        models.append(load_model('./models/'+ m +'.h5'))
     
 except Exception as err:
     print(err)
@@ -41,14 +43,11 @@ for n, d in enumerate(config_dic['pred_dir']):
     # Looks for files in pred_dir directories, makes them into NumPy arrays for prediction of models
     print('Working on directory:', d)
     print('Making SAC files into arrays...')
-    make_Arrays(d, config_dic['arrival_var'])
+    make_Arrays(d, config_dic['arrival_var'], config_dic['window_before'], config_dic['window_after'])
     print('Predicting...')
-    files, pred_avg, pred_err, flipped = predict_Arrival(arrive_model, d)
+    files, pred_avg, pred_err, flipped = predict_Arrival(d, models)
     print('Writing...')
-    write_Pred(d, files, pred_avg, flipped)
-    
-    
-    
+    write_Pred(d, files, pred_avg, flipped, config_dic['prediction_var'])
     
     #file = './pred_data/seismograms_' + d.split('/')[-2] + '.npy'
     

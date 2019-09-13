@@ -10,35 +10,26 @@ import numpy as np
 import scipy as sp
 from aux_funcs import check_String
 
-def write_Pred(datadir, files, preds, flipped):
-    #name = datadir.split('/')[-2]
-    #name = check_string(name)
-    #npzdir = './pred_data/' + name + '/'
+def write_Pred(datadir, files, preds, flipped, pred_var):
     
-    #files = np.sort(os.listdir(npzdir))
     for i, file in enumerate(files):
         seismogram = obspy.read(datadir + file + '.s_fil')
-        #maxima_times = seismogram[0].times()[sp.signal.argrelmax(seismogram[0].data)]
         pred_time = preds[i]
-        #pred_time = maxima_times[np.argmin(np.abs(maxima_times - pred_time))]
-        seismogram[0].stats.sac.t6 = pred_time
+        seismogram[0].stats.sac[pred_var] = pred_time
         if flipped[i]:
             None
             #seismogram[0].data = -seismogram[0].data
-        #seismogram[0].stats.sac.e += shift
         
-        seismogram[0].stats.sac.t6 = shift_Max(seismogram[0])
-        
-        
+        seismogram[0].stats.sac[pred_var] = shift_Max(seismogram[0], pred_var)
         seismogram.write(datadir + file + '.s_fil', format='SAC')
     
     return
 
-def shift_Max(seis):
+def shift_Max(seis, pred_var):
     data = seis.data
     time = seis.times()
     arrival = 0
-    new_arrival = seis.stats.sac.t6
+    new_arrival = seis.stats.sac[pred_var]
     #for i in range(3):
     while (new_arrival - arrival) != 0:
         arrival = new_arrival

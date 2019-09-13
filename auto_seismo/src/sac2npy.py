@@ -11,7 +11,7 @@ import numpy as np
 from aux_funcs import check_String
 
 def training_Arrays(datadir, qualtype, th_arrival_var, arrival_var, 
-                    qual_var, wave_type, w_b=10, w_a=30):
+                    qual_var, wave_type, window_before=10, window_after=30):
     
     resample_Hz = 10
     
@@ -40,8 +40,6 @@ def training_Arrays(datadir, qualtype, th_arrival_var, arrival_var,
         if b < arrival < e:
             amp = seismogram.data
             time = seismogram.times()
-            window_before = w_b # seconds before th_arrival
-            window_after = w_a # ditto after ditto
             rand_window = np.random.rand(6)
             rand_window[0] = 0
             for j, n in enumerate(rand_window):
@@ -91,7 +89,7 @@ def training_Arrays(datadir, qualtype, th_arrival_var, arrival_var,
     np.save('./train_data/cut_times_' + wave_type, cut_time)
     np.save('./train_data/file_names_' + wave_type, file_names)
 
-def make_Arrays(datadir, th_arrival_var):
+def make_Arrays(datadir, th_arrival_var, window_before=10, window_after=30):
     name = datadir.split('/')[-2]
     name = check_String(name)
     files = np.sort(os.listdir(datadir))
@@ -118,16 +116,14 @@ def make_Arrays(datadir, th_arrival_var):
             if b < th_arrival < e:
                 amp = seismogram.data
                 time = seismogram.times()
-                window_before = 10 # seconds before th_arrival
-                window_after = 30 # ditto after ditto
                 rand_window_shifts = np.random.rand(10)
                 rand_window_shifts[0] = 0
                 for j, n in enumerate(rand_window_shifts):
                     if j > 4:
                         amp = -amp
                     rand_arrival = th_arrival - n*8
-                    init = np.where(rand_arrival - window_before < time)[0][0]
-                    end = np.where(rand_arrival + window_after > time)[0][-1]
+                    init = np.where(np.round(rand_arrival - window_before, 1) == time)[0][0]
+                    end = np.where(np.round(rand_arrival + window_after, 1) == time)[0][0]
                     window_size = (window_before + window_after ) / seismogram.stats.delta
                     
                     while end-init > window_size:
