@@ -86,7 +86,7 @@ def training_Arrays(datadir, qualtype, th_arrival_var, arrival_var,
     file_names = np.array(file_names)
     
     np.save('./train_data/seismograms_' + wave_type, seismograms)
-    np.save('./train_data/seismograms_flipped' + wave_type, seismograms)
+    np.save('./train_data/seismograms_flipped_' + wave_type, seismograms)
     np.save('./train_data/arrivals_' + wave_type, arrivals)
     np.save('./train_data/cut_times_' + wave_type, cut_time)
     np.save('./train_data/file_names_' + wave_type, file_names)
