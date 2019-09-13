@@ -56,12 +56,12 @@ def sort_Data(data_X, data_y, test_percent=0.15, debug_mode=False):
     
     return data
 
-def rossNet():
+def rossNet(seismogram_length):
     
     model = Sequential()
     model.add(Conv1D(32, kernel_size=21, strides=1,
                      activation='relu',
-                     input_shape=(len(seismograms[0]), 1)))
+                     input_shape=(seismogram_length, 1)))
     model.add(BatchNormalization())
     model.add(MaxPooling1D(pool_size=2))
     
@@ -115,7 +115,7 @@ def pred_Time_Model(model_name, train_dir, seismos_train, arrivals_train,
         data = sort_Data(seismograms, arrivals, debug_mode=debug_mode)
         
         print('Training arrival prediction model', m+1)
-        model = rossNet()
+        model = rossNet(len(seismograms[0]))
         
         train_hist = model.fit(data['train_x'], data['train_y'],
                                validation_data=(data['test_x'], data['test_y']),
