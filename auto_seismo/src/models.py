@@ -55,7 +55,34 @@ def sort_Data(data_X, data_y, test_percent=0.15, debug_mode=False):
             'blind_index': blind_ind}
     
     return data
+
+def rossNet():
     
+    model = Sequential()
+    model.add(Conv1D(32, kernel_size=21, strides=1,
+                     activation='relu',
+                     input_shape=(len(seismograms[0]), 1)))
+    model.add(BatchNormalization())
+    model.add(MaxPooling1D(pool_size=2))
+    
+    model.add(Conv1D(64, 15, activation='relu'))
+    model.add(BatchNormalization())
+    model.add(MaxPooling1D(pool_size=2))
+    
+    model.add(Conv1D(128, 11, activation='relu'))
+    model.add(BatchNormalization())
+    model.add(MaxPooling1D(pool_size=2))
+    
+    model.add(Flatten())
+    model.add(Dense(512, activation='relu'))
+    model.add(Dense(512, activation='relu'))
+    model.add(Dense(1, activation='linear'))
+    
+    model.compile(loss=huber_loss,
+                  optimizer=Adam())
+                  #metrics=[abs_Error])
+    
+    return model
 
 def pred_Time_Model(model_name, train_dir, seismos_train, arrivals_train, 
                     batch_size, epochs, model_iters, debug_mode=False):
@@ -88,29 +115,7 @@ def pred_Time_Model(model_name, train_dir, seismos_train, arrivals_train,
         data = sort_Data(seismograms, arrivals, debug_mode=debug_mode)
         
         print('Training arrival prediction model', m+1)
-        model = Sequential()
-        model.add(Conv1D(32, kernel_size=21, strides=1,
-                         activation='relu',
-                         input_shape=(len(seismograms[0]), 1)))
-        model.add(BatchNormalization())
-        model.add(MaxPooling1D(pool_size=2))
-        
-        model.add(Conv1D(64, 15, activation='relu'))
-        model.add(BatchNormalization())
-        model.add(MaxPooling1D(pool_size=2))
-        
-        model.add(Conv1D(128, 11, activation='relu'))
-        model.add(BatchNormalization())
-        model.add(MaxPooling1D(pool_size=2))
-        
-        model.add(Flatten())
-        model.add(Dense(512, activation='relu'))
-        model.add(Dense(512, activation='relu'))
-        model.add(Dense(1, activation='linear'))
-        
-        model.compile(loss=huber_loss,
-                      optimizer=Adam())
-                      #metrics=[abs_Error])
+        model = rossNet()
         
         train_hist = model.fit(data['train_x'], data['train_y'],
                                validation_data=(data['test_x'], data['test_y']),

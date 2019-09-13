@@ -17,6 +17,7 @@ def training_Arrays(datadir, qualtype, th_arrival_var, arrival_var,
     
     files = np.sort(os.listdir(datadir))
     seismograms = []
+    seismograms_flipped = []
     arrivals = []
     cut_time = []
     file_names = []
@@ -44,25 +45,30 @@ def training_Arrays(datadir, qualtype, th_arrival_var, arrival_var,
             rand_window = np.random.rand(6)
             rand_window[0] = 0
             for j, n in enumerate(rand_window):
-                rand_arrival = th_arrival - n*2
-                init = np.where(rand_arrival - window_before < time)[0][0]
-                end = np.where(rand_arrival + window_after > time)[0][-1]
-                window_size = (window_before + window_after ) / seismogram.stats.delta
-                
+                rand_arrival = th_arrival - n*5
+                init = np.where(np.round(rand_arrival - window_before, 1) == time)[0][0]
+                #end = np.where(rand_arrival + window_after > time)[0][-1]
+                end = np.where(np.round(rand_arrival + window_after, 1) == time)[0][0]
+                '''
                 while end-init > window_size:
                     end += -1
                 
                 while end-init < window_size:
                     end += 1
-                
+                '''
                 time_i = time[init]
                 time_f = time[end]
+                '''
                 while rand_arrival < time[init]:
                     rand_arrival += 0.1
+                '''
                 if (time_i < arrival < time_f) and (time_i < rand_arrival < time_f):
-                    amp_i = amp[init:end]
-                    amp_i = (amp_i - amp_i.min()) / (amp_i.max() - amp_i.min())
-                    seismograms.append(amp_i)
+                    amp_p = amp[init:end]
+                    amp_n = -amp
+                    amp_p = (amp_p - amp_p.min()) / (amp_p.max() - amp_p.min())
+                    amp_n = (amp_n - amp_n.min()) / (amp_n.max() - amp_n.min())
+                    seismograms.append(amp_p)
+                    seismograms_flipped.append(amp_n)
                     arrivals.append(arrival - time[init])
                     cut_time.append(time[init])
                     file_names.append(file)
@@ -71,6 +77,7 @@ def training_Arrays(datadir, qualtype, th_arrival_var, arrival_var,
         
     
     seismograms = np.array(seismograms).reshape(len(seismograms), len(seismograms[0]), 1)
+    seismograms_flipped = np.array(seismograms_flipped).reshape(len(seismograms), len(seismograms[0]), 1)
     arrivals = np.array(arrivals).reshape(len(arrivals), 1)
     cut_time = np.array(cut_time)
     qualities = np.ones(len(files)) * qual_var
@@ -78,17 +85,10 @@ def training_Arrays(datadir, qualtype, th_arrival_var, arrival_var,
     file_names = np.array(file_names)
     
     np.save('./train_data/seismograms_' + wave_type, seismograms)
+    np.save('./train_data/seismograms_flipped' + wave_type, seismograms)
     np.save('./train_data/arrivals_' + wave_type, arrivals)
     np.save('./train_data/cut_times_' + wave_type, cut_time)
     np.save('./train_data/file_names_' + wave_type, file_names)
-
-#datadir = '../../../seismograms/SS_kept/'
-#qualtype = 'good'
-#th_arrival_var = 't2'
-#arrival_var = 't6'
-#qual_var = 1
-#wave_type = 'SS'
-#make_arrays(datadir, qualtype, th_arrival_var, arrival_var, qual_var, wave_type)
 
 def make_Arrays(datadir, th_arrival_var):
     name = datadir.split('/')[-2]
