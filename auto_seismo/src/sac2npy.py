@@ -35,7 +35,7 @@ def training_Arrays(datadir, qualtype, th_arrival_var, arrival_var,
         arrival = seismogram.stats.sac[arrival_var] + shift
         
         if not (b < th_arrival < e):
-            th_arrival = arrival - 10
+            th_arrival = arrival - 15*np.random.rand()
         
         if b < arrival < e:
             amp = seismogram.data
@@ -77,7 +77,8 @@ def training_Arrays(datadir, qualtype, th_arrival_var, arrival_var,
         
     
     seismograms = np.array(seismograms).reshape(len(seismograms), len(seismograms[0]), 1)
-    seismograms_flipped = np.array(seismograms_flipped).reshape(len(seismograms), len(seismograms[0]), 1)
+    seismograms_flipped = np.array(seismograms_flipped).reshape(len(seismograms_flipped), 
+                                   len(seismograms_flipped[0]), 1)
     arrivals = np.array(arrivals).reshape(len(arrivals), 1)
     cut_time = np.array(cut_time)
     qualities = np.ones(len(files)) * qual_var
