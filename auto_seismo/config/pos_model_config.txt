@@ -18,3 +18,8 @@ train_dir:./train_data/
 seismos_train:seismograms_SS_0025.npy
 arrivals_train:arrivals_SS_0025.npy
 polarities_train:polarities_SS_0025.npy
+
+# Test files
+seismos_test:seismograms_SS_0025_test.npy
+arrivals_test:arrivals_SS_0025_test.npy
+polarities_test:polarities_SS_0025_test.npy

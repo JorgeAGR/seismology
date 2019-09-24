@@ -56,6 +56,21 @@ def sort_Data(data_X, data_y, test_percent=0.15, debug_mode=False):
     
     return data
 
+def load_Data(config):
+    
+    train_dir = check_String(config['train_dir'])
+    seismos_train = check_String(config['seismos_train'])
+    arrivals_train = check_String(config['arrivals_train'])
+    seismos_test = check_String(config['seismos_test'])
+    arrivals_test = check_String(config['arrivals_test'])
+    
+    data = {'train_x': np.load(train_dir + seismos_train),
+            'train_y': np.load(train_dir + arrivals_train),
+            'test_x': np.load(train_dir + seismos_test),
+            'test_y': np.load(train_dir + arrivals_test)}
+    
+    return data
+
 def rossNet(seismogram_length):
     
     model = Sequential()
@@ -84,18 +99,22 @@ def rossNet(seismogram_length):
     
     return model
 
-def pred_Time_Model(model_name, train_dir, seismos_train, arrivals_train, 
-                    batch_size, epochs, model_iters, debug_mode=False):
-    train_dir = check_String(train_dir)
-    seismos_train = check_String(seismos_train)
-    arrivals_train = check_String(arrivals_train)
+def pred_Time_Model(config):
     
-    seismograms = np.load(train_dir + seismos_train)
-    arrivals = np.load(train_dir + arrivals_train)
+    model_name = check_String(config['model_name'])
+    debug_mode = config['debug_mode']
+    batch_size = config['batch_size']
+    epochs = config['epochs']
+    model_iters = config['model_iters']
     
     if debug_mode:
         epochs=5
         model_iters=1
+    
+    #seismograms = np.load(train_dir + seismos_train)
+    #arrivals = np.load(train_dir + arrivals_train)
+    
+    data = load_Data(config)
     
     models = []
     models_train_means = np.zeros(model_iters)
@@ -103,19 +122,19 @@ def pred_Time_Model(model_name, train_dir, seismos_train, arrivals_train,
     models_test_means = np.zeros(model_iters)
     models_test_stds = np.zeros(model_iters)
     
-    train_indices = []
-    test_indices = []
-    blind_indices = []
+    #train_indices = []
+    #test_indices = []
+    #blind_indices = []
     
     models_train_lpe = np.zeros((model_iters, epochs))
     models_test_lpe = np.zeros((model_iters, epochs))
 
     for m in range(model_iters):
         
-        data = sort_Data(seismograms, arrivals, debug_mode=debug_mode)
+        #data = sort_Data(seismograms, arrivals, debug_mode=debug_mode)
         
         print('Training arrival prediction model', m+1)
-        model = rossNet(len(seismograms[0]))
+        model = rossNet(len(data['test_x'][0]))
         
         train_hist = model.fit(data['train_x'], data['train_y'],
                                validation_data=(data['test_x'], data['test_y']),
@@ -141,9 +160,9 @@ def pred_Time_Model(model_name, train_dir, seismos_train, arrivals_train,
         models_train_stds[m] += model_train_std
         models_test_means[m] += model_test_mean
         models_test_stds[m] += model_test_std
-        train_indices.append(data['train_index'])
-        test_indices.append(data['test_index'])
-        blind_indices.append(data['blind_index'])
+        #train_indices.append(data['train_index'])
+        #test_indices.append(data['test_index'])
+        #blind_indices.append(data['blind_index'])
         models_train_lpe[m] = train_hist.history['loss']
         models_test_lpe[m] = train_hist.history['val_loss']
         
@@ -164,8 +183,8 @@ def pred_Time_Model(model_name, train_dir, seismos_train, arrivals_train,
     print('\n')
     model = models[best_model]
     model.save('./models/' + model_name + '.h5')
-    np.savez('./models/etc/' + model_name + '_data_indices', train_index=train_indices[best_model],
-             test_index=test_indices[best_model], blind_index = blind_indices[best_model])
+    #np.savez('./models/etc/' + model_name + '_data_indices', train_index=train_indices[best_model],
+    #         test_index=test_indices[best_model], blind_index = blind_indices[best_model])
     np.savez('./models/etc/' + model_name + '_training_log', loss=models_train_lpe[best_model],
              val_loss=models_test_lpe[best_model])
     

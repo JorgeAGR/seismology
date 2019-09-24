@@ -30,14 +30,7 @@ if not tf_config['gpu']:
                 if model['debug_mode']:
                     model['model_name'] += '_debug'
                 
-                pred_Time_Model(model['model_name'],
-                                model['train_dir'], 
-                                model['seismos_train'],
-                                model['arrivals_train'],
-                                model['batch_size'],
-                                model['epochs'],
-                                model['model_iters'],
-                                debug_mode=model['debug_mode'])
+                pred_Time_Model(model)
                 
 else:
     for model in models:
@@ -46,11 +39,4 @@ else:
                 if model['debug_mode']:
                     model['model_name'] += '_debug'
                 
-                pred_Time_Model(model['model_name'],
-                                model['train_dir'], 
-                                model['seismos_train'],
-                                model['arrivals_train'],
-                                model['batch_size'],
-                                model['epochs'],
-                                model['model_iters'],
-                                debug_mode=model['debug_mode'])
+                pred_Time_Model(model)
