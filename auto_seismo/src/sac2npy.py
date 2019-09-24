@@ -40,12 +40,13 @@ def training_Arrays(datadir, qualtype, th_arrival_var, arrival_var,
         if b < arrival < e:
             amp = seismogram.data
             time = seismogram.times()
-            rand_window = np.random.rand(6)
-            rand_window[0] = 0
-            for j, n in enumerate(rand_window):
+            rand_window_shifts = 2*np.random.rand(6) - 1 # [-1, 1] shift multiplier
+            abs_sort = np.argsort(np.abs(rand_window_shifts))
+            rand_window_shifts = rand_window_shifts[abs_sort]
+            rand_window_shifts[0] = 0
+            for j, n in enumerate(rand_window_shifts):
                 rand_arrival = th_arrival - n*5
                 init = np.where(np.round(rand_arrival - window_before, 1) == time)[0][0]
-                #end = np.where(rand_arrival + window_after > time)[0][-1]
                 end = np.where(np.round(rand_arrival + window_after, 1) == time)[0][0]
                 '''
                 while end-init > window_size:
@@ -63,8 +64,12 @@ def training_Arrays(datadir, qualtype, th_arrival_var, arrival_var,
                 if (time_i < arrival < time_f) and (time_i < rand_arrival < time_f):
                     amp_p = amp[init:end]
                     amp_n = -amp_p
-                    amp_p = (amp_p - amp_p.min()) / (amp_p.max() - amp_p.min())
-                    amp_n = (amp_n - amp_n.min()) / (amp_n.max() - amp_n.min())
+                    # Rescale to [0, 1]
+                    #amp_p = (amp_p - amp_p.min()) / (amp_p.max() - amp_p.min())
+                    #amp_n = (amp_n - amp_n.min()) / (amp_n.max() - amp_n.min())
+                    # Normalize by absolute peak
+                    amp_p = amp_p / np.abs(amp_p).max()
+                    amp_n = amp_n / np.abs(amp_n).max()
                     seismograms.append(amp_p)
                     seismograms_flipped.append(amp_n)
                     arrivals.append(arrival - time[init])
@@ -116,36 +121,32 @@ def make_Arrays(datadir, th_arrival_var, window_before=10, window_after=30):
             if b < th_arrival < e:
                 amp = seismogram.data
                 time = seismogram.times()
-                rand_window_shifts = np.random.rand(10)
+                rand_window_shifts = 2*np.random.rand(6) - 1 # [-1, 1] shift multiplier
+                abs_sort = np.argsort(np.abs(rand_window_shifts))
+                rand_window_shifts = rand_window_shifts[abs_sort]
                 rand_window_shifts[0] = 0
                 for j, n in enumerate(rand_window_shifts):
                     if j > 4:
                         amp = -amp
-                    rand_arrival = th_arrival - n*8
+                    rand_arrival = th_arrival - n*5
                     init = np.where(np.round(rand_arrival - window_before, 1) == time)[0][0]
                     end = np.where(np.round(rand_arrival + window_after, 1) == time)[0][0]
-                    window_size = (window_before + window_after ) / seismogram.stats.delta
-                    
-                    while end-init > window_size:
-                        init += 1
-                    
-                    while end-init < window_size:
-                        end += 1
                     
                     time_i = time[init]
                     time_f = time[end]
                     
                     if (time_i < th_arrival < time_f):
                         amp_i = amp[init:end]
-                        amp_i = (amp_i - amp_i.min()) / (amp_i.max() - amp_i.min())
+                        # Rescale to [0, 1]
+                        #amp_i = (amp_i - amp_i.min()) / (amp_i.max() - amp_i.min())
+                        # Normalize by absolute peak
+                        amp_i = amp_i / np.abs(amp_i).max()
                         cut_times.append(time_i)
                         theoreticals.append(th_arrival - time_i)
                         if j > 4:
                             flips.append(amp_i)
                         else:
                             noflips.append(amp_i)
-                        #seismograms.append(amp_i)
-                        #cut_time.append(time_i)
                     else:
                         continue
                 np.savez('./pred_data/' + name + '/' + file.rstrip('.s_fil'), 
