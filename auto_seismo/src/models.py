@@ -21,6 +21,7 @@ import keras.backend as tf
 from keras.optimizers import Adam
 from keras.layers import Dense, Flatten, Conv1D, MaxPooling1D, BatchNormalization
 from keras.models import Sequential
+from keras.callbacks import CSVLogger, EarlyStopping
 from aux_funcs import check_String
 
 def abs_Error(y_true, y_pred):
@@ -69,6 +70,10 @@ def load_Data(config):
             'test_x': np.load(train_dir + seismos_test),
             'test_y': np.load(train_dir + arrivals_test)}
     
+    if config['debug_mode']:
+        for key in data:
+            data[key] = data[key][:100]
+    
     return data
 
 def rossNet(seismogram_length):
@@ -90,7 +95,9 @@ def rossNet(seismogram_length):
     
     model.add(Flatten())
     model.add(Dense(512, activation='relu'))
+    model.add(BatchNormalization())
     model.add(Dense(512, activation='relu'))
+    model.add(BatchNormalization())
     model.add(Dense(1, activation='linear'))
     
     model.compile(loss=huber_loss,
@@ -98,6 +105,13 @@ def rossNet(seismogram_length):
                   #metrics=[abs_Error])
     
     return model
+
+def get_Callbacks():
+    
+    stopper = EarlyStopping(monitor='val_loss', min_delta=0.001, 
+                            patience=5, restore_best_weights=True)
+    
+    return [stopper,]
 
 def pred_Time_Model(config):
     
@@ -108,7 +122,7 @@ def pred_Time_Model(config):
     model_iters = config['model_iters']
     
     if debug_mode:
-        epochs=5
+        epochs=10
         model_iters=1
     
     #seismograms = np.load(train_dir + seismos_train)
@@ -121,6 +135,7 @@ def pred_Time_Model(config):
     models_train_stds = np.zeros(model_iters)
     models_test_means = np.zeros(model_iters)
     models_test_stds = np.zeros(model_iters)
+    models_test_final_loss = np.zeros(model_iters)
     
     #train_indices = []
     #test_indices = []
@@ -140,10 +155,15 @@ def pred_Time_Model(config):
                                validation_data=(data['test_x'], data['test_y']),
                                batch_size=batch_size,
                                epochs=epochs,
-                               verbose=2,)
+                               verbose=2,
+                               callbacks=get_Callbacks())
+        
+        total_epochs = len(train_hist.history['loss'])
         
         train_pred = model.predict(data['train_x'])
         test_pred = model.predict(data['test_x'])
+        test_loss = model.evaluate(data['test_x'], data['test_y'],
+                                   batch_size=batch_size, verbose=0)
         
         model_train_diff = np.abs(data['train_y'] - train_pred)
         model_test_diff = np.abs(data['test_y'] - test_pred)
@@ -154,17 +174,19 @@ def pred_Time_Model(config):
         
         print('Train Error:', model_train_mean, '+/-', model_train_std)
         print('Test Error:', model_test_mean, '+/-', model_test_std)
+        print('Test Loss:', test_loss)
         
         models.append(model)
         models_train_means[m] += model_train_mean
         models_train_stds[m] += model_train_std
         models_test_means[m] += model_test_mean
         models_test_stds[m] += model_test_std
+        models_test_final_loss[m] += test_loss
         #train_indices.append(data['train_index'])
         #test_indices.append(data['test_index'])
         #blind_indices.append(data['blind_index'])
-        models_train_lpe[m] = train_hist.history['loss']
-        models_test_lpe[m] = train_hist.history['val_loss']
+        models_train_lpe[m][:total_epochs] = train_hist.history['loss']
+        models_test_lpe[m][:total_epochs] = train_hist.history['val_loss']
         
         #model_name = './models/pred_model_' + str(m) + '.h5'
         #if debug_mode:
@@ -180,7 +202,11 @@ def pred_Time_Model(config):
     print('Training Avg Diff Uncertainty :', models_train_stds[best_model])
     print('Testing Avg Diff:', models_test_means[best_model])
     print('Testing Avg Diff Uncertainty:', models_test_stds[best_model])
+    print('Test Loss:', models_test_final_loss[best_model])
     print('\n')
+    if debug_mode:
+        print('model saved in no debug')
+        return
     model = models[best_model]
     model.save('./models/' + model_name + '.h5')
     #np.savez('./models/etc/' + model_name + '_data_indices', train_index=train_indices[best_model],

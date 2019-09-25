@@ -35,7 +35,7 @@ def training_Arrays(datadir, qualtype, th_arrival_var, arrival_var,
         arrival = seismogram.stats.sac[arrival_var] + shift
         
         if not (b < th_arrival < e):
-            th_arrival = arrival - 15*np.random.rand()
+            th_arrival = arrival - 15 * np.random.rand()
         
         if b < arrival < e:
             amp = seismogram.data
@@ -61,22 +61,23 @@ def training_Arrays(datadir, qualtype, th_arrival_var, arrival_var,
                 while rand_arrival < time[init]:
                     rand_arrival += 0.1
                 '''
-                if (time_i < arrival < time_f) and (time_i < rand_arrival < time_f):
-                    amp_p = amp[init:end]
-                    amp_n = -amp_p
-                    # Rescale to [0, 1]
-                    #amp_p = (amp_p - amp_p.min()) / (amp_p.max() - amp_p.min())
-                    #amp_n = (amp_n - amp_n.min()) / (amp_n.max() - amp_n.min())
-                    # Normalize by absolute peak
-                    amp_p = amp_p / np.abs(amp_p).max()
-                    amp_n = amp_n / np.abs(amp_n).max()
-                    seismograms.append(amp_p)
-                    seismograms_flipped.append(amp_n)
-                    arrivals.append(arrival - time[init])
-                    cut_time.append(time[init])
-                    file_names.append(file)
-                else:
-                    continue
+                if not (time_i < arrival < time_f):
+                    time_i = arrival - 15 * np.random.rand() - window_before
+                    time_f = time_i + window_after
+                
+                amp_p = amp[init:end]
+                amp_n = -amp_p
+                # Rescale to [0, 1]
+                #amp_p = (amp_p - amp_p.min()) / (amp_p.max() - amp_p.min())
+                #amp_n = (amp_n - amp_n.min()) / (amp_n.max() - amp_n.min())
+                # Normalize by absolute peak
+                amp_p = amp_p / np.abs(amp_p).max()
+                amp_n = amp_n / np.abs(amp_n).max()
+                seismograms.append(amp_p)
+                seismograms_flipped.append(amp_n)
+                arrivals.append(arrival - time[init])
+                cut_time.append(time[init])
+                file_names.append(file)
         
     
     seismograms = np.array(seismograms).reshape(len(seismograms), len(seismograms[0]), 1)
@@ -133,22 +134,19 @@ def make_Arrays(datadir, th_arrival_var, window_before=10, window_after=30):
                     end = np.where(np.round(rand_arrival + window_after, 1) == time)[0][0]
                     
                     time_i = time[init]
-                    time_f = time[end]
                     
-                    if (time_i < th_arrival < time_f):
-                        amp_i = amp[init:end]
-                        # Rescale to [0, 1]
-                        #amp_i = (amp_i - amp_i.min()) / (amp_i.max() - amp_i.min())
-                        # Normalize by absolute peak
-                        amp_i = amp_i / np.abs(amp_i).max()
-                        cut_times.append(time_i)
-                        theoreticals.append(th_arrival - time_i)
-                        if j > 4:
-                            flips.append(amp_i)
-                        else:
-                            noflips.append(amp_i)
+                    amp_i = amp[init:end]
+                    # Rescale to [0, 1]
+                    #amp_i = (amp_i - amp_i.min()) / (amp_i.max() - amp_i.min())
+                    # Normalize by absolute peak
+                    amp_i = amp_i / np.abs(amp_i).max()
+                    cut_times.append(time_i)
+                    theoreticals.append(th_arrival - time_i)
+                    if j > 4:
+                        flips.append(amp_i)
                     else:
-                        continue
+                        noflips.append(amp_i)
+                        
                 np.savez('./pred_data/' + name + '/' + file.rstrip('.s_fil'), 
                      noflips=noflips, flips=flips, cuts=cut_times, theory=theoreticals)    
         except:
