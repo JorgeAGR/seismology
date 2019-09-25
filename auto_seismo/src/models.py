@@ -106,10 +106,10 @@ def rossNet(seismogram_length):
     
     return model
 
-def get_Callbacks():
+def get_Callbacks(epochs):
     
-    stopper = EarlyStopping(monitor='val_loss', min_delta=0.001, 
-                            patience=5, restore_best_weights=True)
+    stopper = EarlyStopping(monitor='val_loss', min_delta=0.01, 
+                            patience=epochs//2, restore_best_weights=True)
     
     return [stopper,]
 
@@ -151,12 +151,13 @@ def pred_Time_Model(config):
         print('Training arrival prediction model', m+1)
         model = rossNet(len(data['test_x'][0]))
         
+        callbacks = get_Callbacks(epochs)
         train_hist = model.fit(data['train_x'], data['train_y'],
                                validation_data=(data['test_x'], data['test_y']),
                                batch_size=batch_size,
                                epochs=epochs,
                                verbose=2,
-                               callbacks=get_Callbacks())
+                               callbacks=callbacks)
         
         total_epochs = len(train_hist.history['loss'])
         
