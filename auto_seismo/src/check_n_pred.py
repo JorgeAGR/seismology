@@ -28,7 +28,7 @@ config_dic = read_Config('./config/pred_config.txt')
 print('Loading model...')
 try:
     keras.losses.huber_loss = huber_loss
-    keras.metrics.abs_error = abs_Error # temp line
+    #keras.metrics.abs_error = abs_Error # temp line
     models = []
     for m in config_dic['model_names']:
         print(m)

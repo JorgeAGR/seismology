@@ -109,45 +109,43 @@ def make_Arrays(datadir, th_arrival_var, window_before=10, window_after=30):
         flips = []
         cut_times = []
         theoreticals = []
-        try:
-            print('File', i+1, '/', len(files), '...')
-            seismogram = obspy.read(datadir + file)
-            seismogram = seismogram[0].resample(resample_Hz).detrend()
-            b = seismogram.stats.sac['b']
-            shift = -b
-            b = b + shift
-            e = seismogram.stats.sac['e'] + shift
-            th_arrival = seismogram.stats.sac[th_arrival_var] + shift
-            
-            if b < th_arrival < e:
-                amp = seismogram.data
-                time = seismogram.times()
-                rand_window_shifts = 2*np.random.rand(6) - 1 # [-1, 1] shift multiplier
-                abs_sort = np.argsort(np.abs(rand_window_shifts))
-                rand_window_shifts = rand_window_shifts[abs_sort]
-                rand_window_shifts[0] = 0
-                for j, n in enumerate(rand_window_shifts):
-                    if j > 4:
-                        amp = -amp
-                    rand_arrival = th_arrival - n*5
-                    init = np.where(np.round(rand_arrival - window_before, 1) == time)[0][0]
-                    end = np.where(np.round(rand_arrival + window_after, 1) == time)[0][0]
+        print('File', i+1, '/', len(files), '...')
+        seismogram = obspy.read(datadir + file)
+        seismogram = seismogram[0].resample(resample_Hz).detrend()
+        b = seismogram.stats.sac['b']
+        shift = -b
+        b = b + shift
+        e = seismogram.stats.sac['e'] + shift
+        th_arrival = seismogram.stats.sac[th_arrival_var] + shift
+        
+        if b < th_arrival < e:
+            amp = seismogram.data
+            time = seismogram.times()
+            rand_window_shifts = 2*np.random.rand(10) - 1 # [-1, 1] shift multiplier
+            abs_sort = np.argsort(np.abs(rand_window_shifts))
+            rand_window_shifts = rand_window_shifts[abs_sort]
+            rand_window_shifts[0] = 0
+            rand_window_shifts[5] = 0
+            for j, n in enumerate(rand_window_shifts):
+                if j > 4:
+                    amp = -amp
+                rand_arrival = th_arrival - n*5
+                init = np.where(np.round(rand_arrival - window_before, 1) == time)[0][0]
+                end = np.where(np.round(rand_arrival + window_after, 1) == time)[0][0]
+                
+                time_i = time[init]
+                
+                amp_i = amp[init:end]
+                # Rescale to [0, 1]
+                #amp_i = (amp_i - amp_i.min()) / (amp_i.max() - amp_i.min())
+                # Normalize by absolute peak
+                amp_i = amp_i / np.abs(amp_i).max()
+                cut_times.append(time_i)
+                theoreticals.append(th_arrival - time_i)
+                if j > 4:
+                    flips.append(amp_i)
+                else:
+                    noflips.append(amp_i)
                     
-                    time_i = time[init]
-                    
-                    amp_i = amp[init:end]
-                    # Rescale to [0, 1]
-                    #amp_i = (amp_i - amp_i.min()) / (amp_i.max() - amp_i.min())
-                    # Normalize by absolute peak
-                    amp_i = amp_i / np.abs(amp_i).max()
-                    cut_times.append(time_i)
-                    theoreticals.append(th_arrival - time_i)
-                    if j > 4:
-                        flips.append(amp_i)
-                    else:
-                        noflips.append(amp_i)
-                        
-                np.savez('./pred_data/' + name + '/' + file.rstrip('.s_fil'), 
-                     noflips=noflips, flips=flips, cuts=cut_times, theory=theoreticals)    
-        except:
-            continue
+            np.savez('./pred_data/' + name + '/' + file.rstrip('.s_fil'), 
+                 noflips=noflips, flips=flips, cuts=cut_times, theory=theoreticals)

@@ -11,6 +11,6 @@ window_after:25
 # Directories of seismograms to predict for and the
 # corresponding arrival variable
 
-pred_dir:../../seismograms/filt_picked/
+pred_dir:../../seismograms/SS_kept_test/
 arrival_var:t2
 prediction_var:t7

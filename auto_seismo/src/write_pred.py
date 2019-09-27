@@ -14,8 +14,8 @@ def write_Pred(datadir, files, preds, flipped, pred_var):
     
     for i, file in enumerate(files):
         seismogram = obspy.read(datadir + file + '.s_fil')
-        pred_time = preds[i]
-        seismogram[0].stats.sac[pred_var] = pred_time
+        #pred_time = preds[i]
+        seismogram[0].stats.sac[pred_var] = preds[i]
         if flipped[i]:
             None
             #seismogram[0].data = -seismogram[0].data
@@ -33,8 +33,8 @@ def shift_Max(seis, pred_var):
     #for i in range(3):
     while (new_arrival - arrival) != 0:
         arrival = new_arrival
-        init = np.where(time > (arrival - 1 - seis.stats.sac.b))[0][0]
-        end = np.where(time > (arrival + 1 - seis.stats.sac.b))[0][0]
+        init = np.where(time > (arrival - 1))[0][0]
+        end = np.where(time > (arrival + 1))[0][0]
         
         amp_max = np.argmax(np.abs(data[init:end]))
         time_ind = np.arange(init, end, 1)[amp_max]
