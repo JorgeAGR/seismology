@@ -1,20 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Wed Sep 11 22:33:11 2019
+Created on Mon Aug 26 14:22:23 2019
 
 @author: jorgeagr
 """
 import os
-import obspy
 import numpy as np
-import keras.backend as tfb
+from aux_funcs import check_String
 
-def check_String(string):
-    return string.rstrip('\r')
-
-def abs_Error(y_true, y_pred):
-    return tfb.mean(tfb.abs(y_true - y_pred))
 
 def make_Pred(model, seismogram_npz):
     noflips = seismogram_npz['noflips']
@@ -45,7 +39,7 @@ def make_Pred(model, seismogram_npz):
     
     return pred_time, pred_stds[correct_pred], correct_pred
 
-def best_Pred(seismogram_npz, *models):
+def best_Pred(seismogram_npz, models):
     n_models = len(models)
     model_preds = np.zeros(n_models)
     model_errs = np.zeros(n_models)
@@ -53,7 +47,7 @@ def best_Pred(seismogram_npz, *models):
     for i, model in enumerate(models):
         pred_time, pred_std, flipped = make_Pred(model, seismogram_npz)
         model_preds[i] += pred_time
-        model_errs[i] += model_errs
+        model_errs[i] += pred_std
         model_flipped[i] += flipped
     
     best_model = np.argmin(model_errs)
@@ -66,13 +60,12 @@ def best_Pred(seismogram_npz, *models):
     '''
     return model_preds[best_model], model_errs[best_model], model_flipped[best_model]
 
-def predict_Arrival(datadir, *models, debug_mode=False, files=None):
+def predict_Arrival(datadir, models, debug_mode=False):
     name = datadir.split('/')[-2]
     name = check_String(name)
     npzdir = './pred_data/' + name + '/'
     
-    if files is None:
-        files = np.sort(os.listdir(npzdir))
+    files = np.sort(os.listdir(npzdir))
     if debug_mode:
         files = files[:100]
     
