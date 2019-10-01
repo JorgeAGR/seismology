@@ -95,9 +95,7 @@ def rossNet(seismogram_length):
     
     model.add(Flatten())
     model.add(Dense(512, activation='relu'))
-    model.add(BatchNormalization())
     model.add(Dense(512, activation='relu'))
-    model.add(BatchNormalization())
     model.add(Dense(1, activation='linear'))
     
     model.compile(loss=huber_loss,
