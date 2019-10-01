@@ -49,7 +49,7 @@ pos_model = load_model('../auto_seismo/models/arrival_SS_pos_model_0025.h5')
 neg_model = load_model('../auto_seismo/models/arrival_SS_neg_model_0025.h5')
 
 # Picked by Lauren
-#cs = obspy.read('../../seismograms/cross_secs/5caps_wig/0.087_3.96.sac') # good
+cs = obspy.read('../../seismograms/cross_secs/5caps_wig/0.087_3.96.sac') # good
 #cs = obspy.read('../../seismograms/cross_secs/5caps_wig/0.0785_3.74.sac') # meh
 #cs = obspy.read('../../seismograms/cross_secs/5caps_wig/0.523_1.17.sac') # bad
 
@@ -100,7 +100,7 @@ plateus = np.where(np.round(np.diff(window_preds),1) == 0)[0] + 1
 
 fig, ax = plt.subplots()
 ax.plot(time_i_grid, window_preds, color='black')
-#ax.plot(time_i_grid, window_negs, '.', color='black')
+ax.plot(time_i_grid, window_negs, '.', color='black')
 #ax.plot(time_i_grid[plateus], window_preds[plateus], '.', color='red')
 ax.set_xlabel('Starting time [s]')
 ax.set_ylabel('Predicted arrival [s]')
@@ -108,6 +108,8 @@ ax.set_ylabel('Predicted arrival [s]')
 fig, ax = plt.subplots()
 ax.plot(times, cs.data, color='black')
 for ar in arrivals_pos[np.argsort(counts_pos)][-3:]:
+    ax.axvline(ar, color='blue', linestyle='--')
+for ar in arrivals_neg[np.argsort(counts_neg)][-3:]:
     ax.axvline(ar, color='red', linestyle='--')
 ax.set_ylim(cs.data.min(), cs.data.max())
 ax.set_xlim(times.min(), times.max())
