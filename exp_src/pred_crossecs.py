@@ -10,13 +10,27 @@ import numpy as np
 import os
 import obspy
 import numpy as np
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-import matplotlib.ticker as mtick
 from keras.models import load_model
 import keras.losses
 import keras.metrics
 from tensorflow.losses import huber_loss
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import matplotlib.ticker as mtick
+
+height = 16
+width = 25
+
+mpl.rcParams['figure.figsize'] = (width, height)
+mpl.rcParams['font.size'] = 28
+mpl.rcParams['figure.titlesize'] = 'large'
+mpl.rcParams['legend.fontsize'] = 'small'
+mpl.rcParams['xtick.major.size'] = 12
+mpl.rcParams['xtick.minor.size'] = 8
+mpl.rcParams['xtick.labelsize'] = 24
+mpl.rcParams['ytick.major.size'] = 12
+mpl.rcParams['ytick.minor.size'] = 8
+mpl.rcParams['ytick.labelsize'] = 24
 
 def cut_Window(cross_sec, times, t_i, t_f):
     init = np.where(times == np.round(t_i, 1))[0][0]
@@ -95,23 +109,54 @@ for i, t_i, t_f in zip(range(len(time_i_grid)), time_i_grid, time_f_grid):
 
 arrivals_pos, counts_pos = np.unique(np.round(window_preds, 0), return_counts=True)
 arrivals_neg, counts_neg = np.unique(np.round(window_negs, 0), return_counts=True)
-plateus = np.where(np.round(np.diff(window_preds),1) == 0)[0] + 1
+plateus = np.where(np.diff(np.round(window_preds,1)) == 0)[0] + 1
 #arrivals, counts = arrivals[counts > 50], counts[counts > 50]
 
+# Difference between predictions at t+1 and t
+preds_diff = np.diff(window_negs)
+# Which ones are close 0, to find plateus
+zeros = np.isclose(preds_diff, 0, atol=0.05)
+# Calculate the difference in indeces between the zeros.
+# Where jumps == 1, means they belong in the same plateu
+# Anything larger, that is a jump
+pred_ind = np.arange(0, len(preds_diff), 1)
+pred_ind[~zeros] = 0
+jumps = np.zeros(len(preds_diff))
+jumps[1:] = np.abs(np.diff(pred_ind))
+jumps[jumps == 1] = 1
+jumps[jumps > 1] = 0
+
 fig, ax = plt.subplots()
-ax.plot(time_i_grid, window_preds, color='black')
+ax.plot(time_i_grid[1:], preds_diff)
+ax.plot(time_i_grid[1:][zeros], preds_diff[zeros], '.')
+ax.plot(time_i_grid[1:], jumps)
+ax.set_ylim(-5, 10)
+
+fig, ax = plt.subplots()
+#ax.plot(time_i_grid, window_preds, color='black')
 ax.plot(time_i_grid, window_negs, '.', color='black')
 #ax.plot(time_i_grid[plateus], window_preds[plateus], '.', color='red')
 ax.set_xlabel('Starting time [s]')
 ax.set_ylabel('Predicted arrival [s]')
+ax.yaxis.set_minor_locator(mtick.MultipleLocator(10))
+ax.grid()
 
+cs_norm = cs.data / np.abs(cs.data).max()
 fig, ax = plt.subplots()
-ax.plot(times, cs.data, color='black')
-for ar in arrivals_pos[np.argsort(counts_pos)][-3:]:
+ax.plot(times, cs_norm, color='black')
+for i, ar in enumerate(arrivals_pos[np.argsort(counts_pos)][-5:]):
     ax.axvline(ar, color='blue', linestyle='--')
-for ar in arrivals_neg[np.argsort(counts_neg)][-3:]:
-    ax.axvline(ar, color='red', linestyle='--')
-ax.set_ylim(cs.data.min(), cs.data.max())
+    ax.text(ar-5, 0.1, np.sort(counts_pos)[-5:][i], rotation=90, fontsize=16)
+ax.axvline(ar, color='blue', linestyle='--', label='positive model')
+for i, ar in enumerate(arrivals_neg[np.argsort(counts_neg)][-5:]):
+   ax.axvline(ar, color='red', linestyle='--')
+   ax.text(ar-5, 0.1, np.sort(counts_neg)[-5:][i], rotation=90, fontsize=16)
+ax.axvline(ar, color='red', linestyle='--', label='negative model')
+ax.set_ylim(cs_norm.min(), cs_norm.max())
 ax.set_xlim(times.min(), times.max())
 ax.set_xlabel('Time [s]')
 ax.set_ylabel('Amplitude')
+ax.set_title('5caps_wig/0.087_3.96')
+ax.xaxis.set_minor_locator(mtick.MultipleLocator(10))
+ax.legend(loc='upper right')
+fig.tight_layout()
