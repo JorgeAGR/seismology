@@ -106,7 +106,7 @@ def rossNet(seismogram_length):
 
 def get_Callbacks(epochs):
     
-    stopper = EarlyStopping(monitor='val_loss', min_delta=0.01, 
+    stopper = EarlyStopping(monitor='val_loss', min_delta=0.001, 
                             patience=epochs//2, restore_best_weights=True)
     
     return [stopper,]
@@ -210,8 +210,8 @@ def pred_Time_Model(config):
     model.save('./models/' + model_name + '.h5')
     #np.savez('./models/etc/' + model_name + '_data_indices', train_index=train_indices[best_model],
     #         test_index=test_indices[best_model], blind_index = blind_indices[best_model])
-    np.savez('./models/etc/' + model_name + '_training_log', loss=models_train_lpe[best_model],
-             val_loss=models_test_lpe[best_model])
+    np.savez('./models/etc/' + model_name + '_training_logs', loss=models_train_lpe,
+             val_loss=models_test_lpe, best_model=best_model)
     
     return
 
