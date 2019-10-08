@@ -38,8 +38,7 @@ try:
 except:
     pass
 
-files = np.sort(os.listdir(directory))
-seis_files = files
+seis_files = np.sort(os.listdir(directory))
 
 for file in seis_files:
     seismogram = obspy.read(directory+file)[0]

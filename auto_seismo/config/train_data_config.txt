@@ -1,6 +1,6 @@
-datadir:../../seismograms/SS_kept/
+datadir:../../seismograms/SS_kept_test/
 th_arrival:t2
 arrival_var:t6
-type:SS_0025
+type:SS_0050_test
 window_before:0
-window_after:25
+window_after:50

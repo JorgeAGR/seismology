@@ -59,13 +59,14 @@ def shift_Max(seis, pred_var):
     return arrival
 
 keras.losses.huber_loss = huber_loss
-pos_model = load_model('../auto_seismo/models/arrival_SS_pos_model_0025.h5')
-neg_model = load_model('../auto_seismo/models/arrival_SS_neg_model_0025.h5')
+pos_model = load_model('../auto_seismo/models/arrival_SS_pos_model_0040.h5')
+neg_model = load_model('../auto_seismo/models/arrival_SS_neg_model_0040.h5')
+time_window = 40
 
 # Picked by Lauren
-cs = obspy.read('../../seismograms/cross_secs/5caps_wig/0.087_3.96.sac') # good
-#cs = obspy.read('../../seismograms/cross_secs/5caps_wig/0.0785_3.74.sac') # meh
-#cs = obspy.read('../../seismograms/cross_secs/5caps_wig/0.523_1.17.sac') # bad
+#cs = obspy.read('../../seismograms/cross_secs/5caps_wig/0.087_3.96.sac') # good
+#cs = obspy.read('../../seismograms/cross_secs/5caps_wig/0.785_3.74.sac') # meh
+cs = obspy.read('../../seismograms/cross_secs/5caps_wig/0.523_1.17.sac') # bad
 
 # Randomly picked
 #cs = obspy.read('../../seismograms/cross_secs/5caps_wig/0.087_0.54.sac')
@@ -78,8 +79,8 @@ shift = -cs.stats.sac.b
 b = cs.stats.sac.b + shift
 e = cs.stats.sac.e + shift
 
-time_i_grid = np.arange(0, shift - 25 + 0.1, 0.1)
-time_f_grid = np.arange(25, shift + 0.1, 0.1)
+time_i_grid = np.arange(0, shift - time_window + 0.1, 0.1)
+time_f_grid = np.arange(time_window, shift + 0.1, 0.1)
 
 window_preds = np.zeros(len(time_i_grid))
 window_shifted = np.zeros(len(time_i_grid))
@@ -133,7 +134,7 @@ ax.plot(time_i_grid[1:], jumps)
 ax.set_ylim(-5, 10)
 
 fig, ax = plt.subplots()
-#ax.plot(time_i_grid, window_preds, color='black')
+ax.plot(time_i_grid, window_preds, color='black')
 ax.plot(time_i_grid, window_negs, '.', color='black')
 #ax.plot(time_i_grid[plateus], window_preds[plateus], '.', color='red')
 ax.set_xlabel('Starting time [s]')
