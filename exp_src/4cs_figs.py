@@ -85,7 +85,7 @@ n_seis = 15
 fig2, ax2 = plt.subplots(nrows=n_seis)
 for i, ax in enumerate(ax2):
     seis = obspy.read(directory+seis_files[i])[0]
-    ax.plot(time, seis.data / np.abs(seis.data).maimagesx(), color='black')
+    ax.plot(time, seis.data / np.abs(seis.data).max(), color='black')
     ax.axvline(seis.stats.sac.t6 - seis.stats.sac.b, color='red', linestyle='--')
     ax.set_xlim(time[0], time[-1])
     ax.set_ylim(-1.1, 1.1)
@@ -186,4 +186,23 @@ axloss.set_ylabel('Minimum Loss')
 axloss.legend()
 figloss.tight_layout(h_pad=0, w_pad=0)
 plt.savefig('../figs/4cs/min_loss.png', dpi=250)
+plt.close()
+
+windows = [20, 40]
+figwin = plt.figure(figsize=(10, 8))
+axwin = [plt.subplot2grid((2,1), (0,0), colspan=1, rowspan = 1, fig=figwin),
+          plt.subplot2grid((2,1), (1,0), colspan=1, rowspan = 1, fig=figwin)]
+for i, ax in enumerate(axwin):
+    ax.xaxis.set_major_locator(plt.NullLocator())
+    init = np.where(np.round(seismogram.stats.sac.t2 - seismogram.stats.sac.b, 1) < time)[0][0]
+    end = np.where(np.round(seismogram.stats.sac.t2 - seismogram.stats.sac.b + windows[i], 1) == time)[0][0]
+    amp = seismogram.data[init:end]
+    amp = amp / np.abs(amp).max()
+    
+    ax.set_title(str(windows[i]) + 'seconds')
+    ax.plot(time[init:end], amp, color='black')
+    ax.set_ylim(-1.1, 1.1)
+figwin.tight_layout()
+figwin.subplots_adjust(wspace=0, hspace=0.8)
+plt.savefig('../figs/4cs/window_grid.png', dpi=250)
 plt.close()
