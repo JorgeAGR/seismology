@@ -57,17 +57,18 @@ for file in seis_files:
     #pred = seismogram.stats.sac.t6 #- shift
     theoretical = seismogram.stats.sac.t2 - seismogram.stats.sac.b
     fig, ax = plt.subplots()
-    ax.plot(time, amp_i)
-    ax.axvline(theoretical, color='black', linestyle='--', label='th')
-    if actual:
-        ax.axvline(actual, color='red', linestyle='--', label='actual')
-    ax.axvline(pred, color='red', label='pred')
+    ax.plot(time, amp_i, color='black')
+    ax.axvline(theoretical, color='gray', linestyle='--', label='Theory')
+    #if actual:
+    ax.axvline(pred, color='blue', linewidth=1.5, label='Prediction')
+    ax.axvline(actual, color='red', linewidth=0.8, linestyle='--', label='Actual')
     ax.set_xlim(time[0], time[-1])
     ax.set_ylim(-1.05, 1.05)
     ax.xaxis.set_minor_locator(mtick.MultipleLocator(5))
     ax.yaxis.set_minor_locator(mtick.MultipleLocator(0.1))
     ax.set_xlabel('Time From Cut [s]')
     ax.set_ylabel('Relative Amplitude')
+    ax.legend()
     plt.tight_layout()
     plt.close()
-    fig.savefig('../figs/etc/' + dir_name + 'pred_' + file + '.svg', dpi=500)
+    fig.savefig('../figs/etc/' + dir_name + 'pred_' + file + '.png', dpi=250)

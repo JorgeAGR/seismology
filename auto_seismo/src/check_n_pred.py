@@ -45,6 +45,8 @@ for n, d in enumerate(config_dic['pred_dir']):
     print('Making SAC files into arrays...')
     make_Arrays(d, config_dic['arrival_var'], config_dic['window_before'], config_dic['window_after'])
     print('Predicting...')
+    files, pred_avg, pred_err, flipped = predict_Arrival(d, models, simple=True)
+    write_Pred(d, files, pred_avg, flipped, 't8')
     files, pred_avg, pred_err, flipped = predict_Arrival(d, models)
     print('Writing...')
     write_Pred(d, files, pred_avg, flipped, config_dic['prediction_var'])
