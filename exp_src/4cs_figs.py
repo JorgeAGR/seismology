@@ -43,30 +43,39 @@ file = seis_files[0]
 seismogram = obspy.read(directory+file)[0]
 time = seismogram.times()
 
-fig1, ax1 = plt.subplots()
-ax1.plot(time, seismogram.data / np.abs(seismogram.data).max(), color='black')
-ax1.set_xlim(time[0], time[-1])
-ax1.set_ylim(-1, 1)
-ax1.xaxis.set_minor_locator(mtick.MultipleLocator(10))
-ax1.yaxis.set_major_locator(mtick.MultipleLocator(0.5))
-ax1.yaxis.set_minor_locator(mtick.MultipleLocator(0.1))
-ax1.set_xlabel('Time [s]')
-ax1.set_ylabel('Amplitude')
-fig1.tight_layout()
+for i in range(2):
+    fig1, ax1 = plt.subplots()
+    ax1.plot(time, seismogram.data / np.abs(seismogram.data).max(), color='black')
+    if i == 1:
+        ax1.axvline(seismogram.stats.sac.t6 - seismogram.stats.sac.b, color='red', linestyle='--')
+    ax1.set_xlim(time[0], time[-1])
+    ax1.set_ylim(-1, 1)
+    ax1.xaxis.set_minor_locator(mtick.MultipleLocator(10))
+    ax1.yaxis.set_major_locator(mtick.MultipleLocator(0.5))
+    ax1.yaxis.set_minor_locator(mtick.MultipleLocator(0.1))
+    ax1.set_xlabel('Time [s]')
+    ax1.set_ylabel('Amplitude')
+    fig1.tight_layout()
+    plt.savefig('../figs/4cs/seismogram_eg_' + str(i) + '.svg', dpi=500)
 
 np.random.seed(seed=0)
 np.random.shuffle(seis_files)
-fig2, ax2 = plt.subplots(nrows=10)
+n_seis = 15
+fig2, ax2 = plt.subplots(nrows=n_seis)
 for i, ax in enumerate(ax2):
     seis = obspy.read(directory+seis_files[i])[0]
     ax.plot(time, seis.data / np.abs(seis.data).max(), color='black')
+    ax.axvline(seis.stats.sac.t6 - seis.stats.sac.b, color='red', linestyle='--')
     ax.set_xlim(time[0], time[-1])
     ax.set_ylim(-1.1, 1.1)
-    if i < 9:
+    if i < n_seis - 1:
         ax.xaxis.set_major_locator(plt.NullLocator())
         ax.yaxis.set_major_locator(plt.NullLocator())
+    if i > 0:
+        ax.spines['top'].set_visible(False)
 ax.xaxis.set_minor_locator(mtick.MultipleLocator(10))
 ax.yaxis.set_major_locator(plt.NullLocator())
 ax.set_xlabel('Time [s]')
 fig2.tight_layout(h_pad=0)
 fig2.subplots_adjust(wspace=0, hspace=0)
+plt.savefig('../figs/4cs/seismograms.svg', dpi=500)
