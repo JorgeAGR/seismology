@@ -1,6 +1,6 @@
 *.s_fil
-*.npy
-*.npz
+auto_seismo/train_data/*
+auto_seismo/pred_data/*
 *.gif
 *.tar.gz
 figs/etc/
