@@ -39,18 +39,24 @@ def make_Pred(model, seismogram_npz):
     
     return pred_time, pred_stds[correct_pred], correct_pred
 
-def best_Pred(seismogram_npz, models):
+def best_Pred(seismogram_npz, models, simple=False):
     n_models = len(models)
     model_preds = np.zeros(n_models)
     model_errs = np.zeros(n_models)
     model_flipped = np.zeros(n_models)
     for i, model in enumerate(models):
-        pred_time, pred_std, flipped = make_Pred(model, seismogram_npz)
+        if simple:
+            pred_time = model.predict(seismogram_npz['noflips'][0].reshape(1,400,1))
+            pred_std, flipped = 0, 0
+        else:
+            pred_time, pred_std, flipped = make_Pred(model, seismogram_npz)
         model_preds[i] += pred_time
         model_errs[i] += pred_std
         model_flipped[i] += flipped
-    
-    best_model = np.argmin(model_errs)
+    if simple:
+        best_model = 0
+    else:    
+        best_model = np.argmin(model_errs)
     '''
     flip_votes = np.unique(model_flipped)[1]
     if np.unique(flip_votes).size < 2:
@@ -60,7 +66,7 @@ def best_Pred(seismogram_npz, models):
     '''
     return model_preds[best_model], model_errs[best_model], model_flipped[best_model]
 
-def predict_Arrival(datadir, models, debug_mode=False):
+def predict_Arrival(datadir, models, debug_mode=False, simple=False):
     name = datadir.split('/')[-2]
     name = check_String(name)
     npzdir = './pred_data/' + name + '/'
@@ -77,7 +83,7 @@ def predict_Arrival(datadir, models, debug_mode=False):
     for f, file in enumerate(files):
         file = check_String(file)
         seismogram = np.load(npzdir + file)
-        pred_time, pred_std, flip = best_Pred(seismogram, models)
+        pred_time, pred_std, flip = best_Pred(seismogram, models, simple)
         '''
         noflips = seismogram['noflips']
         flips = seismogram['flips']

@@ -20,7 +20,7 @@ def write_Pred(datadir, files, preds, flipped, pred_var):
             None
             #seismogram[0].data = -seismogram[0].data
         
-        seismogram[0].stats.sac[pred_var] = shift_Max(seismogram[0], pred_var)
+        #seismogram[0].stats.sac[pred_var] = shift_Max(seismogram[0], pred_var)
         seismogram.write(datadir + file + '.s_fil', format='SAC')
     
     return
