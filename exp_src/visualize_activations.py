@@ -39,7 +39,7 @@ mpl.rcParams['ytick.labelsize'] = 24
 
 keras.losses.huber_loss = huber_loss
 keras.metrics.abs_error = abs_Error
-pos_model = load_model('../auto_seismo/models/arrival_SS_pos_model.h5')
+pos_model = load_model('../auto_seismo/models/arrival_SS_pos_model_0040.h5')
 
 layer_outputs = [layer.output for layer in pos_model.layers[:-5]]
 layer_names = [layer.name for layer in pos_model.layers[:-5]]
@@ -53,12 +53,9 @@ seis = seis.reshape(1, len(seis), 1)
 
 features = activation_model.predict(seis)
 
-
-for i in range(len(features)):
-    if 'conv' in layer_names[i]:
-        fig, ax = plt.subplots(nrows=10, sharex=True)
-        ax[0].set_title(layer_names[i])
-        for j in range(10):
-            eg_feature = features[i][:,:,j][0]
-            ax[j].plot(eg_feature)
-        plt.tight_layout
+fig, ax = plt.subplots(nrows=10, sharex=True)
+ax[0].set_title(layer_names[0])
+for j in range(10):
+    eg_feature = features[0][:,:,j][0]
+    ax[j].plot(eg_feature)
+plt.tight_layout
