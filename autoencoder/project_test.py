@@ -104,7 +104,8 @@ def rossNet_CAE(input_length, compression_size):
     decoder = Model(decoder_input,
                     decoder_layers[0](decoder_layers[1](decoder_layers[2](decoder_layers[3](decoder_layers[4](decoder_layers[5](decoder_layers[6](decoder_layers[7](decoder_layers[8](decoder_layers[9](decoder_layers[10](decoder_layers[11](decoder_input)))))))))))))
 
-    autoencoder.compile(loss='binary_crossentropy',#huber_loss,
+    # for losses either binary crossentropy or MSE
+    autoencoder.compile(loss='mean_squared_error',#huber_loss,
                   optimizer=Adam(1e-3))
 
     return autoencoder, encoder, decoder
