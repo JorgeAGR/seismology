@@ -105,8 +105,8 @@ def rossNet_CAE(input_length, compression_size):
                     decoder_layers[0](decoder_layers[1](decoder_layers[2](decoder_layers[3](decoder_layers[4](decoder_layers[5](decoder_layers[6](decoder_layers[7](decoder_layers[8](decoder_layers[9](decoder_layers[10](decoder_layers[11](decoder_input)))))))))))))
 
     # for losses either binary crossentropy or MSE
-    autoencoder.compile(loss='mean_squared_error',#huber_loss,
-                  optimizer=Adam(1e-3))
+    autoencoder.compile(loss='binary_crossentropy',#huber_loss,
+                  optimizer=Adam(1e-2))
 
     return autoencoder, encoder, decoder
 
@@ -115,8 +115,10 @@ batch_size = 128
 epochs = 20
 x_train = np.load('data/train/train_seismos.npy')
 x_test = np.load('data/test/test_seismos.npy')
+x_train = (x_train + 1)/2
+x_test = (x_test + 1)/2
 
-autoencoder, encoder, decoder = rossNet_CAE(x_train.shape[1], 32)
+autoencoder, encoder, decoder = rossNet_CAE(x_train.shape[1], 320)
 autoencoder.fit(x_train, x_train,
                 validation_data=(x_test, x_test),
                 verbose=2,
