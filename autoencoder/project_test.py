@@ -7,7 +7,6 @@ Created on Mon Sep 30 22:57:18 2019
 """
 
 import numpy as np
-import obspy
 import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
 from keras.layers import Input, Dense, Conv1D, MaxPooling1D, UpSampling1D, BatchNormalization, Reshape, Flatten
@@ -119,6 +118,11 @@ x_test = np.load('data/test/test_seismos.npy')
 autoencoder, encoder, decoder = rossNet_CAE(x_train.shape[1], 32)
 autoencoder.fit(x_train, x_train,
                 validation_data=(x_test, x_test),
+                verbose=2,
                 batch_size=batch_size,
                 epochs=epochs,
                 callbacks=get_Callbacks(epochs))
+
+autoencoder.save('autoencoder.h5')
+encoder.save('encoder.h5')
+decoder.save('decoder.h5')
