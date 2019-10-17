@@ -4,3 +4,4 @@ auto_seismo/pred_data/*
 *.gif
 *.tar.gz
 figs/etc/
+autoencoder/data/*
