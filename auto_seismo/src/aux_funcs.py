@@ -6,17 +6,45 @@ Created on Wed Aug 28 16:34:34 2019
 @author: jorgeagr
 """
 import os
-# Safeguard for some systems
+
 def check_String(string):
+    '''
+    Function to remove carriage return from string. Necessary for some systems.
+    
+    Parameters
+    ------------
+    string : string
+        String to check for carriage return
+    
+    Returns
+    ------------
+    string.rstrip('\r') : string
+        String without carraige return, if present
+    '''
     return string.rstrip('\r')
 
 def make_Dirs():
+    '''
+    Function that checks if the necessary directories exist and makes them if not.
+    
+    Parameters
+    ------------
+    N/A
+    
+    Returns
+    ------------
+    N/A
+    '''
+    # Dictionary of directories. Keys are the main directories
+    # Elements are subdirectories of the main directories
     directories = {'models': ['etc',], 'pred_data': None, 'results': None,
                    'src': None, 'train_data': ['etc',]}
-    
+    # Iterate through main directories
     for key in directories:
+        # Create directory if not present
         if key not in os.listdir('.'):
             os.mkdir(key)
+        # Iterate through subdirectories and create them if not present
         if type(directories[key]) == list:
             for subdir in directories[key]:
                 if subdir not in os.listdir(key):
@@ -24,6 +52,19 @@ def make_Dirs():
 
 # Load cnn_config.txt file and reads the set values for variables to be used
 def read_Config(file_path):
+    '''
+    Function used to read config files used and return a dictionary of 
+    variables that are then passed to other functions for the various routines
+    
+    Parameters
+    ------------
+    file_path : string
+        Path to the config file being read
+    
+    Returns
+    ------------
+    
+    '''
     config_dic = {}
     with open(file_path) as config:
         lines = config.readlines()

@@ -70,7 +70,7 @@ def training_Arrays(datadir, qualtype, th_arrival_var, arrival_var,
                 # Rescale to [0, 1]
                 #amp_p = (amp_p - amp_p.min()) / (amp_p.max() - amp_p.min())
                 #amp_n = (amp_n - amp_n.min()) / (amp_n.max() - amp_n.min())
-                # Normalize by absolute peak
+                # Normalize by absolute peak, [-1, 1]
                 amp_p = amp_p / np.abs(amp_p).max()
                 amp_n = amp_n / np.abs(amp_n).max()
                 seismograms.append(amp_p)
