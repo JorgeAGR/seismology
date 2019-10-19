@@ -64,11 +64,14 @@ pos_model = load_model('../auto_seismo/models/arrival_SS_pos_model_0040.h5')
 neg_model = load_model('../auto_seismo/models/arrival_SS_neg_model_0040.h5')
 time_window = 40
 
-file_dir = '../../seismograms/cross_secs/5caps_wig/'
-files = os.listdir(file_dir)
+# Picked by Lauren
+#cs = obspy.read('../../seismograms/cross_secs/5caps_wig/0.087_3.96.sac') # good
+#cs = obspy.read('../../seismograms/cross_secs/5caps_wig/0.785_3.74.sac') # meh
+cs = obspy.read('../../seismograms/cross_secs/5caps_wig/0.523_1.17.sac') # bad
 
-for cs_file in files:
-cs = obspy.read(file_dir)
+# Randomly picked
+#cs = obspy.read('../../seismograms/cross_secs/5caps_wig/0.087_0.54.sac')
+#cs = obspy.read('../../seismograms/cross_secs/5caps_wig/0.087_2.70.sac')
 
 cs = cs[0].resample(10)
 times = cs.times()
