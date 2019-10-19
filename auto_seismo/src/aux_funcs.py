@@ -39,12 +39,9 @@ def make_Dirs():
     # Elements are subdirectories of the main directories
     directories = {'models': ['etc',], 'pred_data': None, 'results': None,
                    'src': None, 'train_data': ['etc',]}
-    # Iterate through main directories
     for key in directories:
-        # Create directory if not present
         if key not in os.listdir('.'):
             os.mkdir(key)
-        # Iterate through subdirectories and create them if not present
         if type(directories[key]) == list:
             for subdir in directories[key]:
                 if subdir not in os.listdir(key):

@@ -10,12 +10,39 @@ import obspy
 import numpy as np
 from aux_funcs import check_String
 
-def training_Arrays(datadir, qualtype, th_arrival_var, arrival_var, 
-                    qual_var, wave_type, window_before=10, window_after=30):
+def training_Arrays(datadir, th_arrival_var, arrival_var, 
+                    qual_var, wave_type, window_before=0, window_after=40):
+    '''
+    Function that iterates through seismograms in directory, perform preprocessing,
+    create a time window around the arrival time and randomly shift it to augment
+    the data set. Save augmented data set as npy files for quicker loading in
+    the future. Meant for training/testing data.
     
+    Parameters
+    ------------
+    datadir : string
+        Path to the seismogram files
+    th_arrival_var : string
+        Header variable in which theoretical onset arrival time is stored
+    arrival_var : string
+        Header variable in which picked maximum arrival time is stored
+    qual_var : int
+        Whether it is a good quality (1) or bad quality (0) seismogram
+    wave_type : string
+        Which phase the data corresponds to
+    window_before : float
+        Seconds before theoretical arrival to consider
+    window_after : float
+        Seconds after theoretical arrival to consider
+        
+    Returns
+    ------------
+    N/A
+    '''
     resample_Hz = 10
     
     files = np.sort(os.listdir(datadir))
+    
     seismograms = []
     seismograms_flipped = []
     arrivals = []
@@ -27,20 +54,27 @@ def training_Arrays(datadir, qualtype, th_arrival_var, arrival_var,
         print(i+1, '/', len(files))
         seismogram = obspy.read(datadir + file)
         seismogram = seismogram[0].resample(resample_Hz).detrend()
+        # Begging time
         b = seismogram.stats.sac['b']
+        # The beginning time may not be 0, so shift all attribtues to be so
         shift = -b
         b = b + shift
+        # End time
         e = seismogram.stats.sac['e'] + shift
+        # Theoretical onset arrival time + shift
         th_arrival = seismogram.stats.sac[th_arrival_var] + shift
+        # Picked maximum arrival time + shift
         arrival = seismogram.stats.sac[arrival_var] + shift
         
+        # Theoretical arrival may be something unruly, so assign some random
+        # shift from the picked arrival
         if not (b < th_arrival < e):
             th_arrival = arrival - 15 * np.random.rand()
         
         if b < arrival < e:
             amp = seismogram.data
             time = seismogram.times()
-            rand_window_shifts = 2*np.random.rand(6) - 1 # [-1, 1] shift multiplier
+            rand_window_shifts = 2*np.random.rand(6) - 1 # [-1, 1] interval
             abs_sort = np.argsort(np.abs(rand_window_shifts))
             rand_window_shifts = rand_window_shifts[abs_sort]
             rand_window_shifts[0] = 0
@@ -48,23 +82,11 @@ def training_Arrays(datadir, qualtype, th_arrival_var, arrival_var,
                 rand_arrival = th_arrival - n*5
                 init = np.where(np.round(rand_arrival - window_before, 1) == time)[0][0]
                 end = np.where(np.round(rand_arrival + window_after, 1) == time)[0][0]
-                '''
-                while end-init > window_size:
-                    end += -1
-                
-                while end-init < window_size:
-                    end += 1
-                '''
                 time_i = time[init]
                 time_f = time[end]
-                '''
-                while rand_arrival < time[init]:
-                    rand_arrival += 0.1
-                '''
                 if not (time_i < arrival < time_f):
                     time_i = arrival - 15 * np.random.rand() - window_before
                     time_f = time_i + window_after
-                
                 amp_p = amp[init:end]
                 amp_n = -amp_p
                 # Rescale to [0, 1]
@@ -78,7 +100,6 @@ def training_Arrays(datadir, qualtype, th_arrival_var, arrival_var,
                 arrivals.append(arrival - time[init])
                 cut_time.append(time[init])
                 file_names.append(file)
-        
     
     seismograms = np.array(seismograms).reshape(len(seismograms), len(seismograms[0]), 1)
     seismograms_flipped = np.array(seismograms_flipped).reshape(len(seismograms_flipped), 
@@ -94,8 +115,31 @@ def training_Arrays(datadir, qualtype, th_arrival_var, arrival_var,
     np.save('./train_data/arrivals_' + wave_type, arrivals)
     np.save('./train_data/cut_times_' + wave_type, cut_time)
     np.save('./train_data/file_names_' + wave_type, file_names)
+    
+    return
 
 def make_Arrays(datadir, th_arrival_var, window_before=10, window_after=30):
+    '''
+    Function that iterates through seismograms in directory, perform preprocessing,
+    create a time window around the arrival time and randomly shift and flip the
+    signal for future prediction. Save data and attributes for each seismogram
+    as npz files for quicker loading in the future. Meant for data to predict for.
+    
+    Parameters
+    ------------
+    datadir : string
+        Path to the seismogram files
+    th_arrival_var : string
+        Header variable in which theoretical onset arrival time is stored
+    window_before : float
+        Seconds before theoretical arrival to consider
+    window_after : float
+        Seconds after theoretical arrival to consider
+        
+    Returns
+    ------------
+    N/A
+    '''
     name = datadir.split('/')[-2]
     name = check_String(name)
     files = np.sort(os.listdir(datadir))
@@ -149,3 +193,5 @@ def make_Arrays(datadir, th_arrival_var, window_before=10, window_after=30):
                     
             np.savez('./pred_data/' + name + '/' + file.rstrip('.s_fil'), 
                  noflips=noflips, flips=flips, cuts=cut_times, theory=theoreticals)
+        
+    return

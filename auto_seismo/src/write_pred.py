@@ -32,19 +32,14 @@ def write_Pred(datadir, files, preds, flipped, pred_var):
     ------------
     N/A
     '''
-    # Iterate through filers in a given file list and path directory
     for i, file in enumerate(files):
-        # Load SAC file
         seismogram = obspy.read(datadir + file + '.s_fil')
-        # Stor prediction in prediction variable header
+        # Store prediction in prediction variable header
         seismogram[0].stats.sac[pred_var] = preds[i]
-        # Flip the seismogram to positive polarity if needed
         if flipped[i]:
             None
             #seismogram[0].data = -seismogram[0].data
-        # Shift prediction to its closest maximum
         #seismogram[0].stats.sac[pred_var] = shift_Max(seismogram[0], pred_var)
-        # Write out the file with the new header containing the prediction
         seismogram.write(datadir + file + '.s_fil', format='SAC')
     
     return
@@ -67,9 +62,8 @@ def shift_Max(seis, pred_var):
         The closest local maximum to which the prediction should be shifted
     '''
     data = seis.data
-    # Generate an time array for the data
+    # Generate a time array for the data
     time = seis.times()
-    # Initialize arrival variables to measure change
     arrival = 0
     new_arrival = seis.stats.sac[pred_var]
     while (new_arrival - arrival) != 0:
@@ -77,10 +71,8 @@ def shift_Max(seis, pred_var):
         # Find indices of times 1 second before and after the current arrival
         init = np.where(time > (arrival - 1))[0][0]
         end = np.where(time > (arrival + 1))[0][0]
-        # Find index of local maximum amplitude in previous time interval
         amp_max = np.argmax(np.abs(data[init:end]))
         # Change index in terms to total time range, not just 2 sec window
         time_ind = np.arange(init, end, 1)[amp_max]
-        # Update arrival
         new_arrival = time[time_ind]
     return arrival
