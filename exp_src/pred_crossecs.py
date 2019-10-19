@@ -17,6 +17,7 @@ from tensorflow.losses import huber_loss
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
+from sklearn.cluster import DBSCAN
 
 height = 16
 width = 25
@@ -95,7 +96,7 @@ for i, t_i, t_f in zip(range(len(time_i_grid)), time_i_grid, time_f_grid):
     window_preds[i] += cs.stats.sac.t6#shift_Max(cs, 't6')
     window_shifted[i] += shift_Max(cs, 't6')
     #break
-
+'''
 window_negs = np.zeros(len(time_i_grid))
 for i, t_i, t_f in zip(range(len(time_i_grid)), time_i_grid, time_f_grid):
     if t_f > shift:
@@ -107,14 +108,35 @@ for i, t_i, t_f in zip(range(len(time_i_grid)), time_i_grid, time_f_grid):
     cs.stats.sac.t6 = np.abs(neg_model.predict(cs_window.reshape(1, len(cs_window), 1))[0][0]) + t_i
     window_negs[i] += cs.stats.sac.t6#shift_Max(cs, 't6')
     #break
-
-arrivals_pos, counts_pos = np.unique(np.round(window_preds, 0), return_counts=True)
-arrivals_neg, counts_neg = np.unique(np.round(window_negs, 0), return_counts=True)
-plateus = np.where(np.diff(np.round(window_preds,1)) == 0)[0] + 1
+'''
+#arrivals_pos, counts_pos = np.unique(np.round(window_preds, 0), return_counts=True)
+#arrivals_neg, counts_neg = np.unique(np.round(window_negs, 0), return_counts=True)
+#plateus = np.where(np.diff(np.round(window_preds,1)) == 0)[0] + 1
 #arrivals, counts = arrivals[counts > 50], counts[counts > 50]
 
+# Can think of max distance eps as the max allowed variance??
+# DBSCAN looks for dense clusters, 
+#while True:
+min_samples = 2*time_window# / 2 / 0.1
+dbscan = DBSCAN(eps=0.5, min_samples=min_samples)
+dbscan.fit(window_preds.reshape(-1,1))
+#n_clusters = len(set(dbscan.labels_)) - (1 if -1 in dbscan.labels_ else 0)
+clusters, counts_pos = np.unique(dbscan.labels_, return_counts=True)
+if -1 in clusters:
+    clusters = clusters[1:]
+    counts_pos = counts_pos[1:]
+#    if len(clusters) > 2:
+#        break
+#    else:
+#        min_samples += -10
+sorted_ind = np.argsort(counts_pos)[-2:]
+arrivals_pos = np.zeros(len(clusters))
+for c in clusters:
+    arrivals_pos[c] = np.mean(window_preds[dbscan.labels_ == c])
+
+
 # Difference between predictions at t+1 and t
-preds_diff = np.diff(window_negs)
+preds_diff = np.diff(window_preds)
 # Which ones are close 0, to find plateus
 zeros = np.isclose(preds_diff, 0, atol=0.05)
 # Calculate the difference in indeces between the zeros.
@@ -134,8 +156,10 @@ ax.plot(time_i_grid[1:], jumps)
 ax.set_ylim(-5, 10)
 
 fig, ax = plt.subplots()
-ax.plot(time_i_grid, window_preds, color='black')
-ax.plot(time_i_grid, window_negs, '.', color='black')
+ax.plot(time_i_grid, window_preds, '.', color='black')
+for cluster in clusters[sorted_ind]:
+    ax.plot(time_i_grid[dbscan.labels_ == cluster], window_preds[dbscan.labels_ == cluster], '.')
+#ax.plot(time_i_grid, window_negs, '.', color='black')
 #ax.plot(time_i_grid[plateus], window_preds[plateus], '.', color='red')
 ax.set_xlabel('Starting time [s]')
 ax.set_ylabel('Predicted arrival [s]')
@@ -145,14 +169,14 @@ ax.grid()
 cs_norm = cs.data / np.abs(cs.data).max()
 fig, ax = plt.subplots()
 ax.plot(times, cs_norm, color='black')
-for i, ar in enumerate(arrivals_pos[np.argsort(counts_pos)][-5:]):
+for i, ar in enumerate(arrivals_pos[np.argsort(counts_pos)][-2:]):
     ax.axvline(ar, color='blue', linestyle='--')
-    ax.text(ar-5, 0.1, np.sort(counts_pos)[-5:][i], rotation=90, fontsize=16)
+    ax.text(ar-5, 0.1, np.sort(counts_pos)[-2:][i], rotation=90, fontsize=16)
 ax.axvline(ar, color='blue', linestyle='--', label='positive model')
-for i, ar in enumerate(arrivals_neg[np.argsort(counts_neg)][-5:]):
-   ax.axvline(ar, color='red', linestyle='--')
-   ax.text(ar-5, 0.1, np.sort(counts_neg)[-5:][i], rotation=90, fontsize=16)
-ax.axvline(ar, color='red', linestyle='--', label='negative model')
+#for i, ar in enumerate(arrivals_neg[np.argsort(counts_neg)][-5:]):
+#   ax.axvline(ar, color='red', linestyle='--')
+#   ax.text(ar-5, 0.1, np.sort(counts_neg)[-5:][i], rotation=90, fontsize=16)
+#ax.axvline(ar, color='red', linestyle='--', label='negative model')
 ax.set_ylim(cs_norm.min(), cs_norm.max())
 ax.set_xlim(times.min(), times.max())
 ax.set_xlabel('Time [s]')

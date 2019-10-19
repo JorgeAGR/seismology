@@ -53,9 +53,18 @@ seis = seis.reshape(1, len(seis), 1)
 
 features = activation_model.predict(seis)
 
-fig, ax = plt.subplots(nrows=10, sharex=True)
-ax[0].set_title(layer_names[0])
-for j in range(10):
+fig, ax = plt.figure()
+ax = [plt.subplot2grid((2,3), (0,0), colspan=1, rowspan = 1, fig=figrand),
+          plt.subplot2grid((2,3), (0,1), colspan=1, rowspan = 1, fig=figrand),
+          plt.subplot2grid((2,3), (0,2), colspan=1, rowspan = 1, fig=figrand),
+          plt.subplot2grid((2,3), (1,0), colspan=1, rowspan = 1, fig=figrand),
+          plt.subplot2grid((2,3), (1,1), colspan=1, rowspan = 1, fig=figrand),
+          plt.subplot2grid((2,3), (1,2), colspan=1, rowspan = 1, fig=figrand),]
+#ax[0].set_title(layer_names[0])
+for j in range(len(ax)):
     eg_feature = features[0][:,:,j][0]
     ax[j].plot(eg_feature)
-plt.tight_layout
+    ax.xaxis.set_major_locator(plt.NullLocator())
+    ax.yaxis.set_major_locator(plt.NullLocator())
+fig.tight_layout()
+plt.savefig('../figs/activations.png', dpi=250)
