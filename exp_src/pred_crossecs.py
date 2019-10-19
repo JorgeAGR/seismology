@@ -19,20 +19,6 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 from sklearn.cluster import DBSCAN
 
-height = 16
-width = 25
-
-mpl.rcParams['figure.figsize'] = (width, height)
-mpl.rcParams['font.size'] = 28
-mpl.rcParams['figure.titlesize'] = 'large'
-mpl.rcParams['legend.fontsize'] = 'small'
-mpl.rcParams['xtick.major.size'] = 12
-mpl.rcParams['xtick.minor.size'] = 8
-mpl.rcParams['xtick.labelsize'] = 24
-mpl.rcParams['ytick.major.size'] = 12
-mpl.rcParams['ytick.minor.size'] = 8
-mpl.rcParams['ytick.labelsize'] = 24
-
 def cut_Window(cross_sec, times, t_i, t_f):
     init = np.where(times == np.round(t_i, 1))[0][0]
     end = np.where(times == np.round(t_f, 1))[0][0]
@@ -65,12 +51,12 @@ neg_model = load_model('../auto_seismo/models/arrival_SS_neg_model_0040.h5')
 time_window = 40
 
 file_dir = '../../seismograms/cross_secs/5caps_wig/'
-files = np.sort(os.listdir(file_dir))[:10]
+files = np.sort(os.listdir(file_dir))[:4]
 
 with open(file_dir.split('/')[-2] + '_preds.csv', 'w+') as pred_csv:
     print('file,410pred,410err,660pred,660err', file=pred_csv)
     for cs_file in files:
-        cs = obspy.read(file_dir)
+        cs = obspy.read(file_dir+cs_file)
         
         cs = cs[0].resample(10)
         times = cs.times()
@@ -121,8 +107,8 @@ with open(file_dir.split('/')[-2] + '_preds.csv', 'w+') as pred_csv:
             arrivals_pos[c] = np.mean(window_preds[dbscan.labels_ == c])
             arrivals_pos_err[c] = np.std(window_preds[dbscan.labels_ == c])
         discont_ind = np.argsort(counts_pos)[-2:]
-        arrivals_pos = arrivals_pos[discont_ind] + shift
-        arrivals_pos_err = arrivals_pos_err[discont_ind] + shift
+        arrivals_pos = arrivals_pos[discont_ind] - shift
+        arrivals_pos_err = arrivals_pos_err[discont_ind]
         counts_pos = counts_pos[discont_ind]
         
         disc_660, disc_410 = np.argsort(arrivals_pos)
