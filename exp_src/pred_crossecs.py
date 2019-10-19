@@ -50,8 +50,8 @@ pos_model = load_model('../auto_seismo/models/arrival_SS_pos_model_0040.h5')
 neg_model = load_model('../auto_seismo/models/arrival_SS_neg_model_0040.h5')
 time_window = 40
 
-file_dir = '../../seismograms/cross_secs/5caps_wig/'
-files = np.sort(os.listdir(file_dir))[:4]
+file_dir = '../../seismograms/cross_secs/15caps_wig/'
+files = np.sort(os.listdir(file_dir))
 
 with open(file_dir.split('/')[-2] + '_preds.csv', 'w+') as pred_csv:
     print('file,410pred,410err,660pred,660err', file=pred_csv)
