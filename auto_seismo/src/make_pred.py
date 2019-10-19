@@ -9,37 +9,81 @@ import os
 import numpy as np
 from aux_funcs import check_String
 
+def predict_Arrival(datadir, models, debug_mode=False, simple=False):
+    '''
+    Function that iterates through npz files of seismograms and obtains best prediction
+    from various models for each file.
+    
+    Parameters
+    ------------
+    datadir : string
+        Path to the seismogram files
+    models : list of Keras Models
+        Models to be used for predicting maximum arrival time
+    debug_mode : boolean
+        Shortens the number of predictions for debugging purposes
+    simple : boolean
+        If true, simply predicts off of a single unflipped signal instead of
+        prediction from variations.
+    
+    Returns
+    ------------
+    seis_names : array of strings
+        Array of the names of the files predicted for
+    pred_arrivals : array of floats
+        Array of the predicted maximum arrival times
+    pred_uncertainties : array of floats
+        Array of the uncertainty of the predicted maximum arrival times
+    flipped : array of ints
+        Array of wether the signal is to be flipped (1) or not (0)
+    '''
+    name = datadir.split('/')[-2]
+    name = check_String(name)
+    npzdir = './pred_data/' + name + '/'
 
-def make_Pred(model, seismogram_npz):
-    noflips = seismogram_npz['noflips']
-    flips = seismogram_npz['flips']
-    cutoff = len(noflips)
-    noflips_cut_times = seismogram_npz['cuts'][:cutoff]
-    noflips_th_arrivals = seismogram_npz['theory'][:cutoff]
-    flips_cut_times = seismogram_npz['cuts'][cutoff:]
-    flips_th_arrivals = seismogram_npz['theory'][cutoff:]
+    files = np.sort(os.listdir(npzdir))
+    if debug_mode:
+        files = files[:100]
     
-    #pred = arrive_model.predict(np.load(file)).flatten()
-    noflip_preds = model.predict(np.reshape(noflips, 
-                                            (len(noflips), len(noflips[0]), 1))).flatten()
-    flip_preds = model.predict(np.reshape(flips, 
-                                         (len(flips), len(flips[0]), 1))).flatten()
+    num_pred = len(files)
+    seis_names = []
+    pred_arrivals = np.zeros(num_pred)
+    pred_uncertainties = np.zeros(num_pred)
+    flipped = np.zeros(num_pred)
+    for f, file in enumerate(files):
+        file = check_String(file)
+        seismogram = np.load(npzdir + file)
+        pred_time, pred_std, flip = best_Pred(seismogram, models, simple)
+        seis_names.append(file.rstrip('.npz'))
+        pred_arrivals[f] += pred_time
+        pred_uncertainties[f] += pred_std
+        flipped[f] += flip
+    seis_names = np.asarray(seis_names)
     
-    pred_means = [np.mean(noflip_preds + noflips_cut_times), 
-                  np.mean(flip_preds + flips_cut_times)]
-    pred_stds = [np.std(noflip_preds + noflips_cut_times), 
-                 np.std(flip_preds + flips_cut_times)]
-    
-    if 0.2 > pred_stds[0]/pred_stds[1] > 5:
-        correct_pred = np.argmin(pred_means)
-    else:
-        correct_pred = np.argmin(pred_stds)
-    #th_arrival = noflips_th_arrivals[0] + noflips_cut_times[0]
-    pred_time = pred_means[correct_pred]
-    
-    return pred_time, pred_stds[correct_pred], correct_pred
+    return seis_names, pred_arrivals, pred_uncertainties, flipped
 
 def best_Pred(seismogram_npz, models, simple=False):
+    '''
+    Function that obtains predictions for seismograms using multiple models. Currently only
+    returns prediction of model with lowest variance.
+    
+    Parameters
+    ------------
+    seismogram_npz : Numpy NpzFile
+    
+    models : list of Keras Models
+    
+    simple : boolean
+    
+    Returns
+    ------------
+    model_preds : array of floats
+    
+    model_errs : array of floats
+    
+    model_flipped : array of ints
+    
+    '''
     n_models = len(models)
     model_preds = np.zeros(n_models)
     model_errs = np.zeros(n_models)
@@ -57,96 +101,52 @@ def best_Pred(seismogram_npz, models, simple=False):
         best_model = 0
     else:    
         best_model = np.argmin(model_errs)
-    '''
-    flip_votes = np.unique(model_flipped)[1]
-    if np.unique(flip_votes).size < 2:
-        flipped = 0
-    else:
-        flipped = np.argmax(flip_votes)
-    '''
+    
     return model_preds[best_model], model_errs[best_model], model_flipped[best_model]
 
-def predict_Arrival(datadir, models, debug_mode=False, simple=False):
-    name = datadir.split('/')[-2]
-    name = check_String(name)
-    npzdir = './pred_data/' + name + '/'
+def make_Pred(model, seismogram_npz):
+    '''
+    Function that runs the flipped and unflipped signals for a single seismogram
+    through the model and predicts for them. Allows to obtain an uncertainty in
+    the prediction, as well as determine the correct polarity from the lower 
+    prediction variance.
     
-    files = np.sort(os.listdir(npzdir))
-    if debug_mode:
-        files = files[:100]
+    Parameters
+    ------------
+    model : Keras Model
     
-    num_pred = len(files)
-    seis_names = []
-    pred_arrivals = np.zeros(num_pred)
-    pred_uncertainties = np.zeros(num_pred)
-    flipped = np.zeros(num_pred)
-    for f, file in enumerate(files):
-        file = check_String(file)
-        seismogram = np.load(npzdir + file)
-        pred_time, pred_std, flip = best_Pred(seismogram, models, simple)
-        '''
-        noflips = seismogram['noflips']
-        flips = seismogram['flips']
-        cutoff = len(noflips)
-        noflips_cut_times = seismogram['cuts'][:cutoff]
-        noflips_th_arrivals = seismogram['theory'][:cutoff]
-        flips_cut_times = seismogram['cuts'][cutoff:]
-        flips_th_arrivals = seismogram['theory'][cutoff:]
-        
-        #pred = arrive_model.predict(np.load(file)).flatten()
-        noflip_preds = model.predict(np.reshape(noflips, 
-                                                (len(noflips), len(noflips[0]), 1))).flatten()
-        flip_preds = model.predict(np.reshape(flips, 
-                                             (len(flips), len(flips[0]), 1))).flatten()
-        
-        pred_means = [np.mean(noflip_preds + noflips_cut_times), 
-                      np.mean(flip_preds + flips_cut_times)]
-        pred_stds = [np.std(noflip_preds + noflips_cut_times), 
-                     np.std(flip_preds + flips_cut_times)]
-        
-        if 0.5 > pred_stds[0]/pred_stds[1] > 1.5:
-            correct_pred = np.argmin(pred_means)
-        else:
-            correct_pred = np.argmin(pred_stds)
-        #th_arrival = noflips_th_arrivals[0] + noflips_cut_times[0]
-        pred_time = pred_means[correct_pred]
-        '''
-        seis_names.append(file.rstrip('.npz'))
-        pred_arrivals[f] += pred_time
-        pred_uncertainties[f] += pred_std
-        flipped[f] += flip
-        
-    seis_names = np.asarray(seis_names)
+    seismogram_npz : Numpy NpzFile
     
-    return seis_names, pred_arrivals, pred_uncertainties, flipped
-
-def predict_Train_Data(model, datadir, debug_mode=False):
+    Returns
+    ------------
+    pred_time : float
     
-    name = datadir.split('/')[-2]
-    name = check_String(name)
-    npzdir = './pred_data/' + name + '/'
+    pred_std : float
     
-    files = np.sort(os.listdir(npzdir))
-    if debug_mode:
-        files = files[:100]
+    correct_pred : int
+    '''
+    noflips = seismogram_npz['noflips']
+    flips = seismogram_npz['flips']
+    cutoff = len(noflips)
+    noflips_cut_times = seismogram_npz['cuts'][:cutoff]
+    #noflips_th_arrivals = seismogram_npz['theory'][:cutoff]
+    flips_cut_times = seismogram_npz['cuts'][cutoff:]
+    #flips_th_arrivals = seismogram_npz['theory'][cutoff:]
     
-    seis_names = []
-    pred_arrival = []
-    for file in files:
-        file = check_String(file)
-        seismogram = np.load(npzdir + file)
-        
-        noflip = seismogram['noflips'][0]
-        noflip_cut_time = seismogram['cuts'][0]
-        
-        #pred = arrive_model.predict(np.load(file)).flatten()
-        noflip_pred = model.predict(np.reshape(noflip, 
-                                                (1, len(noflip), 1))).flatten()
-        
-        seis_names.append(file.rstrip('.npz'))
-        pred_arrival.append(noflip_pred + noflip_cut_time)
-        
-    seis_names = np.asarray(seis_names)
-    pred_arrival = np.asarray(pred_arrival)
+    noflip_preds = model.predict(np.reshape(noflips, 
+                                            (len(noflips), len(noflips[0]), 1))).flatten()
+    flip_preds = model.predict(np.reshape(flips, 
+                                         (len(flips), len(flips[0]), 1))).flatten()
     
-    return seis_names, pred_arrival
+    pred_means = [np.mean(noflip_preds + noflips_cut_times), 
+                  np.mean(flip_preds + flips_cut_times)]
+    pred_stds = [np.std(noflip_preds + noflips_cut_times), 
+                 np.std(flip_preds + flips_cut_times)]
+    
+    if 0.5 > pred_stds[0]/pred_stds[1] > 2:
+        correct_pred = np.argmin(pred_means)
+    else:
+        correct_pred = np.argmin(pred_stds)
+    pred_time = pred_means[correct_pred]
+    
+    return pred_time, pred_stds[correct_pred], correct_pred
