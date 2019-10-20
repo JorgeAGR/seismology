@@ -114,7 +114,7 @@ def training_Arrays(datadir, th_arrival_var, arrival_var,
     np.save('./train_data/seismograms_flipped_' + wave_type, seismograms_flipped)
     np.save('./train_data/arrivals_' + wave_type, arrivals)
     np.save('./train_data/cut_times_' + wave_type, cut_time)
-    np.save('./train_data/file_names_' + wave_type, file_names)
+    #np.save('./train_data/file_names_' + wave_type, file_names)
     
     return
 

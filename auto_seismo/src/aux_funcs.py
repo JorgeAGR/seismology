@@ -38,7 +38,7 @@ def make_Dirs():
     # Dictionary of directories. Keys are the main directories
     # Elements are subdirectories of the main directories
     directories = {'models': ['etc',], 'pred_data': None, 'results': None,
-                   'src': None, 'train_data': ['etc',]}
+                   'src': None, 'train_data': ['etc','train','test']}
     for key in directories:
         if key not in os.listdir('.'):
             os.mkdir(key)
