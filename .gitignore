@@ -5,3 +5,4 @@ auto_seismo/pred_data/*
 *.tar.gz
 figs/etc/
 autoencoder/data/*
+autoencoder/autoencoder_weights
