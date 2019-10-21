@@ -50,12 +50,13 @@ pos_model = load_model('../auto_seismo/models/arrival_SS_pos_model_0040.h5')
 neg_model = load_model('../auto_seismo/models/arrival_SS_neg_model_0040.h5')
 time_window = 40
 
-file_dir = '../../seismograms/cross_secs/15caps_wig/'
-files = np.sort(os.listdir(file_dir))
+file_dir = '../../seismograms/cross_secs/5caps_wig/'
+files = np.sort([f for f in os.listdir(file_dir) if '.sac' in f])
 
 with open(file_dir.split('/')[-2] + '_preds.csv', 'w+') as pred_csv:
-    print('file,410pred,410err,660pred,660err', file=pred_csv)
-    for cs_file in files:
+    print('file,410pred,410err,410amp,660pred,660err,660amp', file=pred_csv)
+    for f, cs_file in enumerate(files):
+        print('File', f+1, '/', len(files),'...', end='')
         cs = obspy.read(file_dir+cs_file)
         
         cs = cs[0].resample(10)
@@ -68,6 +69,7 @@ with open(file_dir.split('/')[-2] + '_preds.csv', 'w+') as pred_csv:
         time_i_grid = np.arange(0, shift - time_window + 0.1, 0.1)
         time_f_grid = np.arange(time_window, shift + 0.1, 0.1)
         
+        print('Predicting...', end='')
         window_preds = np.zeros(len(time_i_grid))
         window_shifted = np.zeros(len(time_i_grid))
         for i, t_i, t_f in zip(range(len(time_i_grid)), time_i_grid, time_f_grid):
@@ -94,25 +96,38 @@ with open(file_dir.split('/')[-2] + '_preds.csv', 'w+') as pred_csv:
         '''
         # Can think of max distance eps as the max allowed variance??
         # DBSCAN looks for dense clusters, 
-        min_samples = 2*time_window# / 2 / 0.1
-        dbscan = DBSCAN(eps=0.5, min_samples=min_samples)
+        print('Finding arrivals...', end='')
+        #while True:
+       	min_samples = 2*time_window# / 2 / 0.1
+        dbscan = DBSCAN(eps=0.3, min_samples=min_samples)
         dbscan.fit(window_preds.reshape(-1,1))
         clusters, counts_pos = np.unique(dbscan.labels_, return_counts=True)
         if -1 in clusters:
             clusters = clusters[1:]
             counts_pos = counts_pos[1:]
+            #if len(clusters) >= 2:
+            #    break
+            #else:
+            #    min_samples += -min_samples//4
         arrivals_pos = np.zeros(len(clusters))
         arrivals_pos_err = np.zeros(len(clusters))
         for c in clusters:
             arrivals_pos[c] = np.mean(window_preds[dbscan.labels_ == c])
             arrivals_pos_err[c] = np.std(window_preds[dbscan.labels_ == c])
         discont_ind = np.argsort(counts_pos)[-2:]
-        arrivals_pos = arrivals_pos[discont_ind] - shift
+        arrivals_pos = arrivals_pos[discont_ind]
         arrivals_pos_err = arrivals_pos_err[discont_ind]
         counts_pos = counts_pos[discont_ind]
         
         disc_660, disc_410 = np.argsort(arrivals_pos)
-        
-        string_410 = str(arrivals_pos[disc_410]) + ',' + str(arrivals_pos_err[disc_410])
-        string_660 = str(arrivals_pos[disc_660]) + ',' + str(arrivals_pos_err[disc_660])
+        print('Finding amplitudes....')
+        # if not shifting to max amp in signal....
+        init410 = np.where(times < arrivals_pos[disc_410])[0][-1]
+        init660 = np.where(times < arrivals_pos[disc_660])[0][-1]
+        amp410 = cs.data[init410:init410+2].max()
+        amp660 = cs.data[init660:init660+2].max()
+
+        arrivals_pos = arrivals_pos - shift
+        string_410 = str(arrivals_pos[disc_410]) + ',' + str(arrivals_pos_err[disc_410]) + ',' + str(amp410)
+        string_660 = str(arrivals_pos[disc_660]) + ',' + str(arrivals_pos_err[disc_660]) + ',' + str(amp660)
         print(cs_file + ',' + string_410 + ',' + string_660, file=pred_csv)
