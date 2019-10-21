@@ -73,7 +73,7 @@ time_window = 40
 #cs = obspy.read('../../seismograms/cross_secs/5caps_wig/0.087_0.54.sac')
 #cs = obspy.read('../../seismograms/cross_secs/5caps_wig/0.087_2.70.sac')
 
-cs = obspy.read('../../seismograms/cross_secs/15caps_wig/0.523_3.51.sac')
+cs = obspy.read('../../seismograms/cross_secs/5caps_wig/0.087_0.09.sac')
 
 files = np.sort(os.listdir('../../seismograms/cross_secs/5caps_wig/'))
 #cs = obspy.read('../../seismograms/cross_secs/5caps_wig/' + files[241])
@@ -136,8 +136,10 @@ if -1 in clusters:
 #        min_samples += -10
 sorted_ind = np.argsort(counts_pos)[-2:]
 arrivals_pos = np.zeros(len(clusters))
+arrival_appearance = np.zeros(len(clusters))
 for c in clusters:
     arrivals_pos[c] = np.mean(window_preds[dbscan.labels_ == c])
+    arrival_appearance[c] = counts_pos[c] / 400
 
 '''
 # Difference between predictions at t+1 and t
@@ -186,7 +188,7 @@ ax.set_ylim(cs_norm.min(), cs_norm.max())
 ax.set_xlim(times.min(), times.max())
 ax.set_xlabel('Time [s]')
 ax.set_ylabel('Amplitude')
-ax.set_title('5caps_wig/0.087_3.96')
+#ax.set_title('5caps_wig/0.087_3.96')
 ax.xaxis.set_minor_locator(mtick.MultipleLocator(10))
 ax.legend(loc='upper right')
 fig.tight_layout()
