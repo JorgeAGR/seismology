@@ -70,9 +70,9 @@ def best_Pred(seismogram_npz, models, simple=False):
     Parameters
     ------------
     seismogram_npz : Numpy NpzFile
-    
+        Numpy dictionary binary with flipped signals, unflipped signals and arrivals
     models : list of Keras Models
-    
+        Keras models to predict with
     simple : boolean
     
     Returns

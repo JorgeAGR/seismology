@@ -13,7 +13,6 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
-from sklearn.cluster import DBSCAN
 
 height = 8#16
 width = 12#25

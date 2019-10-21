@@ -4,15 +4,6 @@
 Created on Tue Oct  2 15:35:41 2018
 
 @author: jorgeagr
-
-Based on the network established by Ross et al, 2018 from
-the Seismological Laboratory in Caltech
-
-References:
-Ross, Meier and Hauksson
-P-wave arrival picking and first-motion polarity determination with deep learning
-J. Geophys. Res.-Solid Earth
-2018
 """
 import os
 import numpy as np
