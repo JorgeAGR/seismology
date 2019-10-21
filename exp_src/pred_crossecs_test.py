@@ -71,7 +71,9 @@ time_window = 40
 
 # Randomly picked
 #cs = obspy.read('../../seismograms/cross_secs/5caps_wig/0.087_0.54.sac')
-cs = obspy.read('../../seismograms/cross_secs/5caps_wig/0.087_2.70.sac')
+#cs = obspy.read('../../seismograms/cross_secs/5caps_wig/0.087_2.70.sac')
+
+cs = obspy.read('../../seismograms/cross_secs/15caps_wig/0.523_3.51.sac')
 
 files = np.sort(os.listdir('../../seismograms/cross_secs/5caps_wig/'))
 #cs = obspy.read('../../seismograms/cross_secs/5caps_wig/' + files[241])
@@ -80,11 +82,11 @@ cs = cs[0].resample(10)
 times = cs.times()
 
 shift = -cs.stats.sac.b
-b = cs.stats.sac.b + shift
-e = cs.stats.sac.e + shift
+begin_time = 80 # will be user input
+end_time = 260 # ditto
 
-time_i_grid = np.arange(0, shift - time_window + 0.1, 0.1)
-time_f_grid = np.arange(time_window, shift + 0.1, 0.1)
+time_i_grid = np.arange(begin_time, end_time - time_window + 0.1, 0.1)
+time_f_grid = np.arange(begin_time + time_window, end_time + 0.1, 0.1)
 
 window_preds = np.zeros(len(time_i_grid))
 window_shifted = np.zeros(len(time_i_grid))
