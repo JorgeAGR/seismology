@@ -101,20 +101,22 @@ def training_Arrays(datadir, th_arrival_var, arrival_var,
                 cut_time.append(time[init])
                 file_names.append(file)
     
-    seismograms = np.array(seismograms).reshape(len(seismograms), len(seismograms[0]), 1)
-    seismograms_flipped = np.array(seismograms_flipped).reshape(len(seismograms_flipped), 
+    seismograms = np.asarray(seismograms).reshape(len(seismograms), len(seismograms[0]), 1)
+    np.save('./train_data/seismograms_' + wave_type, seismograms)
+    del seismograms
+    seismograms_flipped = np.asarray(seismograms_flipped).reshape(len(seismograms_flipped), 
                                    len(seismograms_flipped[0]), 1)
+    np.save('./train_data/seismograms_flipped_' + wave_type, seismograms_flipped)
+    del seismograms_flipped
     arrivals = np.array(arrivals).reshape(len(arrivals), 1)
     cut_time = np.array(cut_time)
     qualities = np.ones(len(files)) * qual_var
     qualities = qualities.reshape(len(qualities), 1)
     file_names = np.array(file_names)
     
-    np.save('./train_data/seismograms_' + wave_type, seismograms)
-    np.save('./train_data/seismograms_flipped_' + wave_type, seismograms_flipped)
     np.save('./train_data/arrivals_' + wave_type, arrivals)
     np.save('./train_data/cut_times_' + wave_type, cut_time)
-    #np.save('./train_data/file_names_' + wave_type, file_names)
+    np.save('./train_data/file_names_' + wave_type, file_names)
     
     return
 
