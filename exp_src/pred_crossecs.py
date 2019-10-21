@@ -50,11 +50,15 @@ def find_Precursors(file_dir, cs_file, model):
         
     cs = cs[0].resample(10)
     times = cs.times()
-        
     shift = -cs.stats.sac.b
-    shift = -cs.stats.sac.b
-    time_i_grid = np.arange(0, shift - time_window + 0.1, 0.1)
-    time_f_grid = np.arange(time_window, shift + 0.1, 0.1)
+    
+    begin_time = -np.abs(-270) # Seconds before main arrival. Will become an input.
+    begin_time = np.round(begin_time + shift, decimals=1)
+    end_time = -np.abs(-84) # ditto above
+    end_time = np.round(end_time + shift, decimals=1)
+    
+    time_i_grid = np.arange(begin_time, end_time - time_window + 0.1, 0.1)
+    time_f_grid = np.arange(begin_time + time_window, end_time + 0.1, 0.1)
     window_preds = np.zeros(len(time_i_grid))
     #window_shifted = np.zeros(len(time_i_grid))
     print('Predicting...', end=' ')
@@ -114,4 +118,3 @@ for f, cs_file in enumerate(files):
     string_410, string_660 = find_Precursors(file_dir, cs_file, pos_model)
     with open(file_dir.split('/')[-2] + '_preds.csv', 'a') as pred_csv:
         print(cs_file + ',' + string_410 + ',' + string_660, file=pred_csv)
-    break
