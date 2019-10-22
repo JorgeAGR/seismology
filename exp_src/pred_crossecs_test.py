@@ -67,21 +67,26 @@ time_window = 40
 # Picked by Lauren
 #cs = obspy.read('../../seismograms/cross_secs/5caps_wig/0.087_3.96.sac') # good
 #cs = obspy.read('../../seismograms/cross_secs/5caps_wig/0.785_3.74.sac') # meh
-cs = obspy.read('../../seismograms/cross_secs/5caps_wig/0.523_1.17.sac') # bad
+#cs = obspy.read('../../seismograms/cross_secs/5caps_wig/0.523_1.17.sac') # bad
 
 # Randomly picked
 #cs = obspy.read('../../seismograms/cross_secs/5caps_wig/0.087_0.54.sac')
 #cs = obspy.read('../../seismograms/cross_secs/5caps_wig/0.087_2.70.sac')
 
+cs = obspy.read('../../seismograms/cross_secs/5caps_wig/0.087_0.09.sac')
+
+files = np.sort(os.listdir('../../seismograms/cross_secs/5caps_wig/'))
+#cs = obspy.read('../../seismograms/cross_secs/5caps_wig/' + files[241])
+
 cs = cs[0].resample(10)
 times = cs.times()
 
 shift = -cs.stats.sac.b
-b = cs.stats.sac.b + shift
-e = cs.stats.sac.e + shift
+begin_time = 80 # will be user input
+end_time = 260 # ditto
 
-time_i_grid = np.arange(0, shift - time_window + 0.1, 0.1)
-time_f_grid = np.arange(time_window, shift + 0.1, 0.1)
+time_i_grid = np.arange(begin_time, end_time - time_window + 0.1, 0.1)
+time_f_grid = np.arange(begin_time + time_window, end_time + 0.1, 0.1)
 
 window_preds = np.zeros(len(time_i_grid))
 window_shifted = np.zeros(len(time_i_grid))
@@ -117,8 +122,8 @@ for i, t_i, t_f in zip(range(len(time_i_grid)), time_i_grid, time_f_grid):
 # Can think of max distance eps as the max allowed variance??
 # DBSCAN looks for dense clusters, 
 #while True:
-min_samples = 2*time_window# / 2 / 0.1
-dbscan = DBSCAN(eps=0.5, min_samples=min_samples)
+min_samples = 2#2*time_window# / 2 / 0.1
+dbscan = DBSCAN(eps=0.05, min_samples=min_samples)
 dbscan.fit(window_preds.reshape(-1,1))
 #n_clusters = len(set(dbscan.labels_)) - (1 if -1 in dbscan.labels_ else 0)
 clusters, counts_pos = np.unique(dbscan.labels_, return_counts=True)
@@ -131,10 +136,12 @@ if -1 in clusters:
 #        min_samples += -10
 sorted_ind = np.argsort(counts_pos)[-2:]
 arrivals_pos = np.zeros(len(clusters))
+arrival_appearance = np.zeros(len(clusters))
 for c in clusters:
     arrivals_pos[c] = np.mean(window_preds[dbscan.labels_ == c])
+    arrival_appearance[c] = counts_pos[c] / 400
 
-
+'''
 # Difference between predictions at t+1 and t
 preds_diff = np.diff(window_preds)
 # Which ones are close 0, to find plateus
@@ -154,10 +161,10 @@ ax.plot(time_i_grid[1:], preds_diff)
 ax.plot(time_i_grid[1:][zeros], preds_diff[zeros], '.')
 ax.plot(time_i_grid[1:], jumps)
 ax.set_ylim(-5, 10)
-
+'''
 fig, ax = plt.subplots()
 ax.plot(time_i_grid, window_preds, '.', color='black')
-for cluster in clusters[sorted_ind]:
+for cluster in clusters:#[sorted_ind]:
     ax.plot(time_i_grid[dbscan.labels_ == cluster], window_preds[dbscan.labels_ == cluster], '.')
 #ax.plot(time_i_grid, window_negs, '.', color='black')
 #ax.plot(time_i_grid[plateus], window_preds[plateus], '.', color='red')
@@ -181,7 +188,7 @@ ax.set_ylim(cs_norm.min(), cs_norm.max())
 ax.set_xlim(times.min(), times.max())
 ax.set_xlabel('Time [s]')
 ax.set_ylabel('Amplitude')
-ax.set_title('5caps_wig/0.087_3.96')
+#ax.set_title('5caps_wig/0.087_3.96')
 ax.xaxis.set_minor_locator(mtick.MultipleLocator(10))
 ax.legend(loc='upper right')
 fig.tight_layout()
