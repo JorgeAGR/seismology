@@ -112,7 +112,7 @@ resample_Hz = 10
 time_window = 40
 n_preds = time_window * resample_Hz # Maximum number of times the peak could be found, from sliding the window
 
-file_dir = '../../seismograms/cross_secs/5caps_wig/'
+file_dir = '../../seismograms/cross_secs/15caps_wig/'
 files = np.sort([f for f in os.listdir(file_dir) if '.sac' in f])
 with open(file_dir.split('/')[-2] + '_preds.csv', 'w+') as pred_csv:
     print('file,410pred,410err,410amp,410qual,660pred,660err,660amp,660qual', file=pred_csv)
