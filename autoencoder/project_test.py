@@ -34,11 +34,11 @@ def get_Decoder_Output(autoencoder, compression_size, layer, i=1, layers=12):
         return decoder_input, layer(decoder_input)
 '''
 
-def get_Callbacks(epochs):
+def get_Callbacks(epochs, model_name):
     
     stopper = EarlyStopping(monitor='val_loss', min_delta=0.001, 
                             patience=epochs//2, restore_best_weights=True)
-    checkpoint = ModelCheckpoint('./autoencoder_weights',
+    checkpoint = ModelCheckpoint(model_name + '_weights',
                                  monitor='val_loss', save_best_only=True, save_weights_only=True)
     return [stopper, checkpoint]
 
@@ -150,26 +150,30 @@ def rossNet_CAE(input_length, compression_size):
 
     return autoencoder, encoder, None#decoder
 
-# Load training and testing data
-batch_size = 128
-epochs = 20
-x_train = np.load('data/train/train_seismos.npy')
-x_test = np.load('data/test/test_seismos.npy')
-x_train = (x_train + 1)/2
-x_test = (x_test + 1)/2
+def train_Model(model_class, model_name):
+    # Load training and testing data
+    batch_size = 128
+    epochs = 20
+    x_train = np.load('data/train/train_seismos.npy')
+    x_test = np.load('data/test/test_seismos.npy')
+    x_train = (x_train + 1)/2
+    x_test = (x_test + 1)/2
 
-# For vanilla AE
-x_train = x_train.reshape(x_train.shape[0], x_train.shape[1])
-x_test = x_test.reshape(x_test.shape[0], x_test.shape[1])
+    # For vanilla AE
+    x_train = x_train.reshape(x_train.shape[0], x_train.shape[1])
+    x_test = x_test.reshape(x_test.shape[0], x_test.shape[1])
 
-autoencoder, encoder, decoder = AutoEncoder(x_train.shape[1], 320)
-autoencoder.fit(x_train, x_train,
+    autoencoder, encoder, decoder = model_class(x_train.shape[1], 320)
+    autoencoder.fit(x_train, x_train,
                 validation_data=(x_test, x_test),
                 verbose=2,
                 batch_size=batch_size,
                 epochs=epochs,
-                callbacks=get_Callbacks(epochs))
-autoencoder.load_weights('autoencoder_weights')
-autoencoder.save('autoencoder.h5')
-#encoder.save('encoder.h5')
-#decoder.save('decoder.h5')
+                callbacks=get_Callbacks(epochs, model_name))
+    autoencoder.load_weights(model_name + '_weights')
+    autoencoder.save(model_name + '.h5')
+    #encoder.save('encoder.h5')
+    #decoder.save('decoder.h5')
+
+
+train_Model(AutoEncoder, 'autoencoder_bce')
