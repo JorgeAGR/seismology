@@ -136,6 +136,7 @@ def RossNet_CAE(input_length, compression_size):
     decoding = Conv1D(1, kernel_size=21, strides=1,
                      activation='sigmoid', padding='same')(up3)
     '''
+    
     up1 = UpSampling1D(size=2)(max3)
     bn_up1 = BatchNormalization()(up1)
     conv_up1 = Conv1D(128, kernel_size=11, strides=1,
@@ -143,11 +144,16 @@ def RossNet_CAE(input_length, compression_size):
 
     up2 = UpSampling1D(size=2)(conv_up1)
     bn_up2 = BatchNormalization()(up2)
-    conv_up2 = Conv1D(64, kernel_size=15, strides=1,                                                                                                                                                                                                             activation='relu', padding='same')(bn_up2)
+    conv_up2 = Conv1D(64, kernel_size=15, strides=1,
+                      activation='relu', padding='same')(bn_up2)
 
     up3 = UpSampling1D(size=2)(conv_up2)
     bn_up3 = BatchNormalization()(up3)
-    conv_up3 = Conv1D(32, kernel_size=21, strides=1,                                                                                                                                                                                                             activation='relu', padding='same')(bn_up3)
+    conv_up3 = Conv1D(32, kernel_size=21, strides=1,
+                      activation='relu', padding='same')(bn_up3)
+    
+    decoding = Conv1D(1, kernel_size=21, strides=1,
+                      activation='sigmoid', padding='same')(conv_up3)
     
     autoencoder = Model(input_seis, decoding)
     
