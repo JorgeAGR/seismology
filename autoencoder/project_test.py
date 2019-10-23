@@ -13,7 +13,7 @@ from sklearn.cluster import KMeans
 from keras.layers import Input, Dense, Conv1D, MaxPooling1D, UpSampling1D, BatchNormalization, Reshape, Flatten
 from keras.models import Model
 from keras.callbacks import EarlyStopping, ModelCheckpoint
-from keras.optimizers import Adam
+from keras.optimizers import Adam, Adadelta
 
 '''
 # This stumped me! I can't think recursively. Figure it out later.
@@ -163,7 +163,6 @@ def RossNet_CAE(input_length, compression_size):
     for layer, filt in zip((1, 4, 7), ('21', '15', '11')):
         autoencoder.layers[layer].set_weights(np.load('conv_weights/conv' + filt + 'x1.npy', allow_pickle=True))
         autoencoder.layers[layer].trainable = False
-
     #decoder_input = Input(shape=(compression_size,))
     #decoder_layers = get_Decoder_Layers(autoencoder)
     
@@ -173,7 +172,7 @@ def RossNet_CAE(input_length, compression_size):
     #                decoder_layers[0](decoder_layers[1](decoder_layers[2](decoder_layers[3](decoder_layers[4](decoder_layers[5](decoder_layers[6](decoder_layers[7](decoder_layers[8](decoder_layers[9](decoder_layers[10](decoder_layers[11](decoder_input)))))))))))))
     
     # for losses either binary crossentropy or MSE
-    autoencoder.compile(loss='binary_crossentropy',#huber_loss,
+    autoencoder.compile(loss='mean_squared_error',
                   optimizer=Adam(1e-3))
 
     print(autoencoder.summary())
@@ -186,8 +185,8 @@ def train_Model(model_class, model_name):
     epochs = 20
     x_train = np.load('data/train/train_seismos.npy')
     x_test = np.load('data/test/test_seismos.npy')
-    x_train = (x_train + 1)/2
-    x_test = (x_test + 1)/2
+    #x_train = (x_train + 1)/2
+    #x_test = (x_test + 1)/2
 
     # For vanilla AE
     #x_train = x_train.reshape(x_train.shape[0], x_train.shape[1])
