@@ -66,29 +66,6 @@ def AutoEncoder(input_length, compression_size):
 
     return autoencoder, None, None
 
-def CAE(input_length, compression_size):
-    input_seis = Input(shape=(input_length, 1))
-
-    conv1 = Conv1D(32, kernel_size=3, strides=1,
-                     activation='relu', padding='same')(input_seis)
-    bn1 = BatchNormalization()(conv1)
-    max1 = MaxPooling1D(pool_size=2)(bn1)
-
-    convup1 = Conv1D(32, kernel_size=3, strides=1,
-                     activation='relu', padding='same')(max1)
-    bn_up1 = BatchNormalization()(convup1)
-    up1 = UpSampling1D(size=2)(bn_up1)
-
-    decoding = Conv1D(1, kernel_size=21, strides=1,
-                     activation='sigmoid', padding='same')(up1)
-
-    autoencoder = Model(input_seis, decoding)
-
-    autoencoder.compile(loss='binary_crossentropy',#huber_loss,
-                  optimizer=Adam(1e-2))
-
-    return autoencoder, None, None#decoder
-
 def RossNet_CAE(input_length, compression_size):
     input_seis = Input(shape=(input_length, 1))
 
@@ -151,9 +128,9 @@ def RossNet_CAE(input_length, compression_size):
     bn_up3 = BatchNormalization()(up3)
     conv_up3 = Conv1D(32, kernel_size=21, strides=1,
                       activation='relu', padding='same')(bn_up3)
-    
+    # sigmoid? or tanh? or maybe something else
     decoding = Conv1D(1, kernel_size=21, strides=1,
-                      activation='sigmoid', padding='same')(conv_up3)
+                      activation='tanh', padding='same')(conv_up3)
     
     autoencoder = Model(input_seis, decoding)
     
@@ -187,7 +164,7 @@ def train_Model(model_class, model_name):
     x_test = np.load('data/test/test_seismos.npy')
     #x_train = (x_train + 1)/2
     #x_test = (x_test + 1)/2
-
+    
     # For vanilla AE
     #x_train = x_train.reshape(x_train.shape[0], x_train.shape[1])
     #x_test = x_test.reshape(x_test.shape[0], x_test.shape[1])
@@ -204,5 +181,4 @@ def train_Model(model_class, model_name):
     #encoder.save('encoder.h5')
     #decoder.save('decoder.h5')
 
-
-train_Model(RossNet_CAE, 'rossnet_convautoencoder_mse')
+train_Model(RossNet_CAE, 'rossnet_convautoencoder_nodense_-11data_mse')
