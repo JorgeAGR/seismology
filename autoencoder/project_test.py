@@ -150,7 +150,7 @@ def RossNet_CAE(input_length, compression_size):
     
     # for losses either binary crossentropy or MSE
     autoencoder.compile(loss='mean_squared_error',
-                  optimizer=Adam(1e-3))
+                  optimizer=Adam(1e-4))
 
     print(autoencoder.summary())
 
@@ -170,7 +170,7 @@ def train_Model(model_class, model_name):
     #x_test = x_test.reshape(x_test.shape[0], x_test.shape[1])
 
     autoencoder, encoder, decoder = model_class(x_train.shape[1], 320)
-    autoencoder.fit(x_train, x_train,
+    train_hist = autoencoder.fit(x_train, x_train,
                 validation_data=(x_test, x_test),
                 verbose=2,
                 batch_size=batch_size,
@@ -180,5 +180,6 @@ def train_Model(model_class, model_name):
     autoencoder.save(model_name + '.h5')
     #encoder.save('encoder.h5')
     #decoder.save('decoder.h5')
+    np.savez('RossNet_CAE_train_log', loss=train_hist.history['loss'], val_loss=train_hist.history['val_loss'])
 
-train_Model(RossNet_CAE, 'rossnet_convautoencoder_nodense_-11data_mse')
+train_Model(RossNet_CAE, 'rossnet_convautoencoder_nodense_mse')
