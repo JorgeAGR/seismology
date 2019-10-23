@@ -39,8 +39,10 @@ dir_name = directory.split('/')[-2] + '/'
 
 seis_files = np.sort(os.listdir(directory))
 file = seis_files[0]
+file_bad = seis_files[69]
 
 seismogram = obspy.read(directory+file)[0]
+seismogram_bad = obspy.read(directory+file_bad)[0]
 time = seismogram.times()
 
 def relu(x):
@@ -63,6 +65,8 @@ figrelu.tight_layout()
 plt.savefig('../figs/4cs/relu.png', dpi=250)
 plt.close()
 
+#num = np.random.randint(0, len(seis_files))
+#seismogram = obspy.read(directory+seis_files[num])[0]
 for i in range(2):
     fig1, ax1 = plt.subplots()
     ax1.plot(time, seismogram.data / np.abs(seismogram.data).max(), color='black')
@@ -78,6 +82,21 @@ for i in range(2):
     fig1.tight_layout()
     plt.savefig('../figs/4cs/seismogram_eg_' + str(i) + '.png', dpi=250)
     plt.close()
+    
+figbad, axbad = plt.subplots()
+axbad.plot(time, seismogram_bad.data / np.abs(seismogram_bad.data).max(), color='black')
+if i == 1:
+    axbad.axvline(seismogram_bad.stats.sac.t6 - seismogram_bad.stats.sac.b, color='red', linestyle='--')
+axbad.set_xlim(time[0], time[-1])
+axbad.set_ylim(-1, 1)
+axbad.xaxis.set_minor_locator(mtick.MultipleLocator(10))
+axbad.yaxis.set_major_locator(mtick.MultipleLocator(0.5))
+axbad.yaxis.set_minor_locator(mtick.MultipleLocator(0.1))
+axbad.set_xlabel('Time [s]')
+axbad.set_ylabel('Amplitude')
+figbad.tight_layout()
+plt.savefig('../figs/4cs/seismogram_bad_eg_' + str(i) + '.png', dpi=250)
+plt.close()
 
 np.random.seed(seed=0)
 np.random.shuffle(seis_files)
