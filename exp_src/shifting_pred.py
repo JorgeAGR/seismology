@@ -58,23 +58,23 @@ for i, file in enumerate(files):
     preds[i] = seis.stats.sac.t7
     actuals[i] = seis.stats.sac.t6 - seis.stats.sac.b
 
-shift_error = np.abs(preds - actuals)
-print(shift_error)
+shift_error = preds - actuals
+print(len(np.where(shift_error<0)[0])/len(shift_error))
 fig, ax = plt.subplots()
 weights = np.ones_like(shift_error)/len(shift_error)
-shift_hist = ax.hist(shift_error, np.arange(0, 0.5, 0.02), histtype='step', align='mid', 
-        color='black', linewidth=1, weights=weights, cumulative=False,)# label='Shifted Windows')
+shift_hist = ax.hist(shift_error, np.arange(-0.5, 0.5, 0.02), histtype='step', align='mid', 
+        color='black', linewidth=2, weights=weights, cumulative=False,)# label='Shifted Windows')
 #simple_hist = ax.hist(simple_error, np.arange(-1, 1, 0.1), histtype='step', align='mid',
 #               color='green', linewidth=2, weights=weights, cumulative=False, label='Single Window')
-ax.set_xlim(-0.1, 0.5)
-ax.set_ylim(0, 0.3)
+ax.set_xlim(-0.5, 0.5)
+ax.set_ylim(0, 0.2)
 ax.xaxis.set_major_locator(mtick.MultipleLocator(0.1))
 ax.yaxis.set_major_locator(mtick.MultipleLocator(0.1))
 ax.xaxis.set_minor_locator(mtick.MultipleLocator(0.02))
 ax.yaxis.set_minor_locator(mtick.MultipleLocator(0.02))
 ax.set_xlabel(r'$t_{pred} - t_{actual}$ [s]')
-ax.set_ylabel('Fraction of counts')
-ax.legend()
+ax.set_ylabel('Fraction of seismograms')
+#ax.legend()
 plt.tight_layout()
 fig.savefig('../figs/shift_v_simple_hist.png', dpi=250)
 
@@ -92,6 +92,6 @@ ax2.xaxis.set_minor_locator(mtick.MultipleLocator(0.1))
 ax2.yaxis.set_minor_locator(mtick.MultipleLocator(0.05))
 ax2.set_xlabel(r'$|t_{pred} - t_{actual}| [s]$')
 ax2.set_ylabel('Fraction of counts')
-ax2.legend(loc='lower right')
+#ax2.legend(loc='lower right')
 plt.tight_layout()
 fig2.savefig('../figs/shift_v_simple_cumhist.png', dpi=250)

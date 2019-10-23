@@ -18,51 +18,33 @@ import keras.losses
 import keras.metrics
 from tensorflow.losses import huber_loss
 
-#temp line to use models... remove trace of abs_error until it works?
-from models import abs_Error
-
+# Checks for the necessary directories and makes them if not present
 make_Dirs()
 
+# Load config file for prediction variables
 config_dic = read_Config('./config/pred_config.txt')
 
 print('Loading model...')
 try:
+    # Attempt to load the models, else raise an error 
     keras.losses.huber_loss = huber_loss
-    #keras.metrics.abs_error = abs_Error # temp line
     models = []
     for m in config_dic['model_names']:
         print(m)
         models.append(load_model('./models/'+ m +'.h5'))
-    
 except Exception as err:
     print(err)
     print('Error! Use an existing model or create a new one.')
     quit()
 
 for n, d in enumerate(config_dic['pred_dir']):
-    # Looks for files in pred_dir directories, makes them into NumPy arrays for prediction of models
     print('Working on directory:', d)
     print('Making SAC files into arrays...')
+    # Iterates through files in directory and writes them as npy arrays
     make_Arrays(d, config_dic['arrival_var'], config_dic['window_before'], config_dic['window_after'])
     print('Predicting...')
-    files, pred_avg, pred_err, flipped = predict_Arrival(d, models, simple=True)
-    write_Pred(d, files, pred_avg, flipped, 't8')
+    # Predict arrival times for all seismograms in the directory
     files, pred_avg, pred_err, flipped = predict_Arrival(d, models)
+    # Write the predictions to the SAC files
     print('Writing...')
     write_Pred(d, files, pred_avg, flipped, config_dic['prediction_var'])
-    
-    #file = './pred_data/seismograms_' + d.split('/')[-2] + '.npy'
-    
-    #name = d.split('/')[-2]
-    # Predicts using the arrays made before, and saves predictions alongisde name of each file in a csv file
-    #pred = arrive_model.predict(np.load(file)).flatten()
-    #arrival_times = np.load('./pred_data/cut_times_' + name + '.npy') + pred
-    '''
-    files = np.load('./results/file_names_' + name + '.npy')
-    with open('./results/results_' + name + '.csv', 'w+') as csv_file:
-        writer = csv.writer(csv_file, delimiter=',')    
-        for i in range(len(pred)):
-            writer.writerow([files[i], arrival_times[i]])
-    os.remove('./results/file_names_' + name + '.npy')
-    print('CSV saved')
-    '''
