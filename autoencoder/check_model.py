@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
 from keras.layers import Input, Dense, Conv1D, MaxPooling1D, UpSampling1D, BatchNormalization, Reshape, Flatten
-from keras.models import Model
+from keras.models import Model, load_model
 from keras.optimizers import Adam
 
 def rossNet_CAE(input_length, compression_size):
@@ -58,18 +58,18 @@ def rossNet_CAE(input_length, compression_size):
     
     autoencoder = Model(input_seis, decoding)
     
-    decoder_input = Input(shape=(compression_size,))
-    decoder_layers = get_Decoder_Layers(autoencoder)
+    #decoder_input = Input(shape=(compression_size,))
+    #decoder_layers = get_Decoder_Layers(autoencoder)
     
-    encoder = Model(input_seis, encoding)
-    decoder = Model(decoder_input,
-                    decoder_layers[0](decoder_layers[1](decoder_layers[2](decoder_layers[3](decoder_layers[4](decoder_layers[5](decoder_layers[6](decoder_layers[7](decoder_layers[8](decoder_layers[9](decoder_layers[10](decoder_layers[11](decoder_input)))))))))))))
+    #encoder = Model(input_seis, encoding)
+    #decoder = Model(decoder_input,
+    #                decoder_layers[0](decoder_layers[1](decoder_layers[2](decoder_layers[3](decoder_layers[4](decoder_layers[5](decoder_layers[6](decoder_layers[7](decoder_layers[8](decoder_layers[9](decoder_layers[10](decoder_layers[11](decoder_input)))))))))))))
 
     # for losses either binary crossentropy or MSE
     autoencoder.compile(loss='mean_squared_error',#huber_loss,
                   optimizer=Adam(1e-3))
 
-    return autoencoder, encoder, decoder
+    return autoencoder, None, None#encoder, decoder
 
 # Load training and testing data
 batch_size = 128
@@ -80,11 +80,17 @@ x_test = np.load('data/test/test_seismos.npy')
 x_train = (x_train + 1)/2
 x_test = (x_test + 1)/2 
 
+# If using vanilla autoencoder
+x_train = x_train.reshape(x_train.shape[0], x_train.shape[1])
+x_test = x_test.reshape(x_test.shape[0], x_test.shape[1])
+
 # Initialize models and load weights
-autoencoder, encoder, decoder = rossNet_CAE(x_train.shape[1], 32)
-autoencoder.load_weights('autoencoder_weights')
+#autoencoder, encoder, decoder = rossNet_CAE(x_train.shape[1], 32)
+#autoencoder.load_weights('autoencoder_weights')
+
+autoencoder = load_model('autoencoder_bce.h5')
 
 # Predict for an instance and plot the actual and reconstructed for comparison
-train_rec = autoencoder.predict(x_train[0].reshape(1, x_train.shape[1], 1)).flatten()
+train_rec = autoencoder.predict(x_train[100].reshape(1, x_train.shape[1])).flatten()
 plt.plot(x_train[0])
 plt.plot(train_rec)
