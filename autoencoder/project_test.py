@@ -205,4 +205,4 @@ def train_Model(model_class, model_name):
     #decoder.save('decoder.h5')
 
 
-train_Model(RossNet_CAE, 'rossnet_convautoencoder_bce')
+train_Model(RossNet_CAE, 'rossnet_convautoencoder_mse')
