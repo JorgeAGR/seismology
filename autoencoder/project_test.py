@@ -5,7 +5,8 @@ Created on Mon Sep 30 22:57:18 2019
 
 @author: jorgeagr
 """
-
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
@@ -88,7 +89,7 @@ def CAE(input_length, compression_size):
 
     return autoencoder, None, None#decoder
 
-def rossNet_CAE(input_length, compression_size):
+def RossNet_CAE(input_length, compression_size):
     input_seis = Input(shape=(input_length, 1))
 
     conv1 = Conv1D(32, kernel_size=21, strides=1,
@@ -116,6 +117,7 @@ def rossNet_CAE(input_length, compression_size):
     
     #reshaped = Reshape(max3.shape.as_list()[1:])(expand)
     
+    '''
     convup1 = Conv1D(128, kernel_size=11, strides=1,
                      activation='relu', padding='same')(max3)#(reshaped)
     bn_up1 = BatchNormalization()(convup1)
@@ -133,9 +135,29 @@ def rossNet_CAE(input_length, compression_size):
     
     decoding = Conv1D(1, kernel_size=21, strides=1,
                      activation='sigmoid', padding='same')(up3)
+    '''
+    up1 = UpSampling1D(size=2)(max3)
+    bn_up1 = BatchNormalization()(up1)
+    conv_up1 = Conv1D(128, kernel_size=11, strides=1,
+                     activation='relu', padding='same')(bn_up1)
+
+    up2 = UpSampling1D(size=2)(conv_up1)
+    bn_up2 = BatchNormalization()(up2)
+    conv_up2 = Conv1D(64, kernel_size=15, strides=1,                                                                                                                                                                                                             activation='relu', padding='same')(bn_up2)
+
+    up3 = UpSampling1D(size=2)(conv_up2)
+    bn_up3 = BatchNormalization()(up3)
+    conv_up3 = Conv1D(32, kernel_size=21, strides=1,                                                                                                                                                                                                             activation='relu', padding='same')(bn_up3)
     
     autoencoder = Model(input_seis, decoding)
     
+    # Load weights from automated picker model for the initial feature recognition
+    # Idea is that this should focus on reproducing the known shape of SS phase
+    # both in main arrival and precursors
+    for layer, filt in zip((1, 4, 7), ('21', '15', '11')):
+        autoencoder.layers[layer].set_weights(np.load('conv_weights/conv' + filt + 'x1.npy', allow_pickle=True))
+        autoencoder.layers[layer].trainable = False
+
     #decoder_input = Input(shape=(compression_size,))
     #decoder_layers = get_Decoder_Layers(autoencoder)
     
@@ -144,16 +166,11 @@ def rossNet_CAE(input_length, compression_size):
     #decoder = Model(decoder_input,
     #                decoder_layers[0](decoder_layers[1](decoder_layers[2](decoder_layers[3](decoder_layers[4](decoder_layers[5](decoder_layers[6](decoder_layers[7](decoder_layers[8](decoder_layers[9](decoder_layers[10](decoder_layers[11](decoder_input)))))))))))))
     
-    # Load weights from automated picker model for the initial feature recognition
-    # Idea is that this should focus on reproducing the known shape of SS phase
-    # both in main arrival and precursors
-    for layer, filt in zip((1, 4, 7), ('21', '15', '11')):
-        autoencoder.layers[layer].set_weights(np.load('conv_weights/conv' + filt + 'x1.npy'))
-        autoencoder.layers[layer].trainable = False
-    
     # for losses either binary crossentropy or MSE
     autoencoder.compile(loss='binary_crossentropy',#huber_loss,
-                  optimizer=Adam(1e-2))
+                  optimizer=Adam(1e-3))
+
+    print(autoencoder.summary())
 
     return autoencoder, None, None#encoder, decoder
 
@@ -167,8 +184,8 @@ def train_Model(model_class, model_name):
     x_test = (x_test + 1)/2
 
     # For vanilla AE
-    x_train = x_train.reshape(x_train.shape[0], x_train.shape[1])
-    x_test = x_test.reshape(x_test.shape[0], x_test.shape[1])
+    #x_train = x_train.reshape(x_train.shape[0], x_train.shape[1])
+    #x_test = x_test.reshape(x_test.shape[0], x_test.shape[1])
 
     autoencoder, encoder, decoder = model_class(x_train.shape[1], 320)
     autoencoder.fit(x_train, x_train,
@@ -183,4 +200,4 @@ def train_Model(model_class, model_name):
     #decoder.save('decoder.h5')
 
 
-train_Model(AutoEncoder, 'autoencoder_bce')
+train_Model(RossNet_CAE, 'rossnet_convautoencoder_bce')
