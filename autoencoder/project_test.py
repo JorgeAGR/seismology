@@ -137,18 +137,25 @@ def rossNet_CAE(input_length, compression_size):
     autoencoder = Model(input_seis, decoding)
     
     #decoder_input = Input(shape=(compression_size,))
-    decoder_layers = get_Decoder_Layers(autoencoder)
+    #decoder_layers = get_Decoder_Layers(autoencoder)
     
-    encoder = Model(input_seis, max3)#encoding)
-    decoder_input = Input(shape=encoder.get_output_shape_at(0))
+    #encoder = Model(input_seis, max3)#encoding)
+    #decoder_input = Input(shape=encoder.get_output_shape_at(0))
     #decoder = Model(decoder_input,
     #                decoder_layers[0](decoder_layers[1](decoder_layers[2](decoder_layers[3](decoder_layers[4](decoder_layers[5](decoder_layers[6](decoder_layers[7](decoder_layers[8](decoder_layers[9](decoder_layers[10](decoder_layers[11](decoder_input)))))))))))))
-
+    
+    # Load weights from automated picker model for the initial feature recognition
+    # Idea is that this should focus on reproducing the known shape of SS phase
+    # both in main arrival and precursors
+    for layer, filt in zip((1, 4, 7), ('21', '15', '11')):
+        autoencoder.layers[layer].set_weights(np.load('conv_weights/conv' + filt + 'x1.npy'))
+        autoencoder.layers[layer].trainable = False
+    
     # for losses either binary crossentropy or MSE
     autoencoder.compile(loss='binary_crossentropy',#huber_loss,
                   optimizer=Adam(1e-2))
 
-    return autoencoder, encoder, None#decoder
+    return autoencoder, None, None#encoder, decoder
 
 # Load training and testing data
 batch_size = 128
