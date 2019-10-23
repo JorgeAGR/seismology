@@ -53,7 +53,7 @@ def get_Decoder_Layers(autoencoder, layers=12):
 
 
 def AutoEncoder(input_length, compression_size):
-    input_seis = Input(shape=(input_length, 1))
+    input_seis = Input(shape=(input_length,))
     
     dense1 = Dense(input_length//2, activation='sigmoid')(input_seis)
     encoded = Dense(input_length//4, activation='sigmoid')(dense1)
@@ -61,7 +61,7 @@ def AutoEncoder(input_length, compression_size):
     decoded = Dense(input_length, activation='sigmoid')(dense_up1)
 
     autoencoder = Model(input_seis, decoded)
-    autoencoder.compile(loss='mean_squared_error', optimizer=Adam())
+    autoencoder.compile(loss='mean_squared_error', optimizer=Adam(1e-4))
 
     return autoencoder, None, None
 
@@ -87,15 +87,6 @@ def CAE(input_length, compression_size):
                   optimizer=Adam(1e-2))
 
     return autoencoder, None, None#decoder
-
-
-
-
-
-
-
-
-
 
 def rossNet_CAE(input_length, compression_size):
     input_seis = Input(shape=(input_length, 1))
@@ -167,6 +158,10 @@ x_test = np.load('data/test/test_seismos.npy')
 x_train = (x_train + 1)/2
 x_test = (x_test + 1)/2
 
+# For vanilla AE
+x_train = x_train.reshape(x_train.shape[0], x_train.shape[1])
+x_test = x_test.reshape(x_test.shape[0], x_test.shape[1])
+
 autoencoder, encoder, decoder = AutoEncoder(x_train.shape[1], 320)
 autoencoder.fit(x_train, x_train,
                 validation_data=(x_test, x_test),
@@ -174,7 +169,7 @@ autoencoder.fit(x_train, x_train,
                 batch_size=batch_size,
                 epochs=epochs,
                 callbacks=get_Callbacks(epochs))
-
-#autoencoder.save('autoencoder.h5')
+autoencoder.load_weights('autoencoder_weights')
+autoencoder.save('autoencoder.h5')
 #encoder.save('encoder.h5')
 #decoder.save('decoder.h5')
