@@ -94,7 +94,7 @@ def RossNet_CAE(input_length, compression_size):
                       activation='relu', padding='same')(bn_up3)
     
     decoding = Conv1D(1, kernel_size=21, strides=1,
-                      activation='sigmoid', padding='same')(conv_up3)
+                      activation='tanh', padding='same')(conv_up3)
     
     autoencoder = Model(input_seis, decoding)
     
@@ -124,9 +124,25 @@ def RossNet_CAE(input_length, compression_size):
 x_train = np.load('data/train/train_seismos.npy')
 x_test = np.load('data/test/test_seismos.npy')
 # Shift to [0, 1] interval
-# What the hell?! It works when training on [-1, 1] data, but predict with [0, 1]!?!??!
-x_train = (x_train + 1)/2
-x_test = (x_test + 1)/2 
+'''
+What the hell?! It works when training on [-1, 1] data, but predict with [0, 1]!?!??!
+Using rossnet_convautoe..._nodense_mse_weights
+
+UPDATE: Now I trained a new model with the data from [0, 1], AND IT CONVERGED?!
+Works with data from [0,1] here, as expected. So what happened in the past?
+Stuck in local minimima when initializing? I haven't changed anything (I think)
+from previous runs...
+
+UPDATE2: Ran a model with data from [-1,1] AND Tanh activation (I was stupid for using sigmoid before.
+Maybe the reason for the previous artefact?). It's good, but it didn't converge as well instantly as
+the [0,1] and sigmoid from above. Doesn't make much sense, since the weights for the convolution layers
+are trained with data from [-1, 1]. Fluke? In any case, can probably forget that weird thing that happened
+at the top of these comment section. -- Strike that, at 2nd epoch reached ~5e-4 MSE. This works too.
+
+Project done! Kinda. Have to play with denoising now.
+'''
+#x_train = (x_train + 1)/2
+#x_test = (x_test + 1)/2 
 
 # If using vanilla autoencoder
 #x_train = x_train.reshape(x_train.shape[0], x_train.shape[1])
@@ -134,7 +150,8 @@ x_test = (x_test + 1)/2
 
 # Initialize models and load weights
 autoencoder, encoder, decoder = RossNet_CAE(x_train.shape[1], 32)
-autoencoder.load_weights('rossnet_convautoencoder_nodense_mse_weights')
+# Activation function of output has to be changed for [0,1] data
+autoencoder.load_weights('rossnet_convautoencoder_nodense_-11data_mse_weights')
 
 #autoencoder = load_model('autoencoder_bce.h5')
 
