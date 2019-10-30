@@ -66,7 +66,7 @@ def AutoEncoder(input_length, compression_size):
 
     return autoencoder, None, None
 
-def RossNet_CAE(input_length, compression_size):
+def RossNet_CAE(input_length, compression_size, transfer_learning=True):
     input_seis = Input(shape=(input_length, 1))
 
     conv1 = Conv1D(32, kernel_size=21, strides=1,
@@ -84,15 +84,13 @@ def RossNet_CAE(input_length, compression_size):
     bn3 = BatchNormalization()(conv3)
     max3 = MaxPooling1D(pool_size=2)(bn3)
 
-    #flattened = Flatten()(max3)
+    flattened = Flatten()(max3)
     
-    #dense_d1 = Dense(500, activation='sigmoid')
+    encoding = Dense(compression_size, activation='sigmoid')(flattened)
     
-    #encoding = Dense(compression_size, activation='sigmoid')(flattened)
+    expanded = Dense(max3.shape.as_list()[1] * max3.shape.as_list()[2], activation='relu')(encoding)
     
-    #expand = Dense(max3.shape.as_list()[1] * max3.shape.as_list()[2], activation='sigmoid')(encoding)
-    
-    #reshaped = Reshape(max3.shape.as_list()[1:])(expand)
+    reshaped = Reshape(max3.shape.as_list()[1:])(expanded)
     
     '''
     convup1 = Conv1D(128, kernel_size=11, strides=1,
@@ -114,7 +112,7 @@ def RossNet_CAE(input_length, compression_size):
                      activation='sigmoid', padding='same')(up3)
     '''
     
-    up1 = UpSampling1D(size=2)(max3)
+    up1 = UpSampling1D(size=2)(reshaped)#(max3)
     bn_up1 = BatchNormalization()(up1)
     conv_up1 = Conv1D(128, kernel_size=11, strides=1,
                      activation='relu', padding='same')(bn_up1)
@@ -137,9 +135,11 @@ def RossNet_CAE(input_length, compression_size):
     # Load weights from automated picker model for the initial feature recognition
     # Idea is that this should focus on reproducing the known shape of SS phase
     # both in main arrival and precursors
-    for layer, filt in zip((1, 4, 7), ('21', '15', '11')):
-        autoencoder.layers[layer].set_weights(np.load('conv_weights/conv' + filt + 'x1.npy', allow_pickle=True))
-        autoencoder.layers[layer].trainable = False
+    if transfer_learning:
+        for layer, filt in zip((1, 4, 7), ('21', '15', '11')):
+            autoencoder.layers[layer].set_weights(np.load('conv_weights/conv' + filt + 'x1.npy', allow_pickle=True))
+            autoencoder.layers[layer].trainable = False
+    
     #decoder_input = Input(shape=(compression_size,))
     #decoder_layers = get_Decoder_Layers(autoencoder)
     
@@ -156,7 +156,7 @@ def RossNet_CAE(input_length, compression_size):
 
     return autoencoder, None, None#encoder, decoder
 
-def train_Model(model_class, model_name):
+def train_Model(model_class, model_name, transfer_learning=True):
     # Load training and testing data
     batch_size = 128
     epochs = 20
@@ -169,7 +169,8 @@ def train_Model(model_class, model_name):
     #x_train = x_train.reshape(x_train.shape[0], x_train.shape[1])
     #x_test = x_test.reshape(x_test.shape[0], x_test.shape[1])
 
-    autoencoder, encoder, decoder = model_class(x_train.shape[1], 320)
+    print(model_name)
+    autoencoder, encoder, decoder = model_class(x_train.shape[1], 320, transfer_learning=transfer_learning)
     train_hist = autoencoder.fit(x_train, x_train,
                 validation_data=(x_test, x_test),
                 verbose=2,
@@ -180,6 +181,7 @@ def train_Model(model_class, model_name):
     autoencoder.save(model_name + '.h5')
     #encoder.save('encoder.h5')
     #decoder.save('decoder.h5')
-    np.savez('RossNet_CAE_train_log', loss=train_hist.history['loss'], val_loss=train_hist.history['val_loss'])
+    np.savez(model_name + '_train_log', loss=train_hist.history['loss'], val_loss=train_hist.history['val_loss'])
 
-train_Model(RossNet_CAE, 'rossnet_convautoencoder_nodense_mse')
+train_Model(RossNet_CAE, 'rossnet_convautoencoder_transfer_dense_mse')
+#train_Model(RossNet_CAE, 'rossnet_convautoencoder_notransfer_nodense_mse', transfer_learning=False)
