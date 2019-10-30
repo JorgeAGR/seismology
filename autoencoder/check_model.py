@@ -149,13 +149,13 @@ Project done! Kinda. Have to play with denoising now.
 #x_test = x_test.reshape(x_test.shape[0], x_test.shape[1])
 
 # Initialize models and load weights
-autoencoder, encoder, decoder = RossNet_CAE(x_train.shape[1], 32)
+#autoencoder, encoder, decoder = RossNet_CAE(x_train.shape[1], 32)
 # Activation function of output has to be changed for [0,1] data
-autoencoder.load_weights('rossnet_convautoencoder_nodense_-11data_mse_weights')
+#autoencoder.load_weights('rossnet_convautoencoder_nodense_-11data_mse_weights')
 
-#autoencoder = load_model('autoencoder_bce.h5')
+autoencoder = load_model('models/rossnet_convautoencoder_transfer_dense_mse.h5')
 
 # Predict for an instance and plot the actual and reconstructed for comparison
-test_rec = autoencoder.predict(x_test[0].reshape(1, x_train.shape[1], 1)).flatten()
-plt.plot(x_test[0])
+test_rec = autoencoder.predict(x_train[0].reshape(1, x_train.shape[1], 1)).flatten()
+plt.plot(x_train[0])
 plt.plot(test_rec)
