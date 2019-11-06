@@ -47,7 +47,7 @@ def shift_Max(seis, pred_var):
 
 def find_Precursors(file_dir, cs_file, model):
     cs = obspy.read(file_dir+cs_file)
-        
+    cs_file = cs_file.rstrip('.sac')
     cs = cs[0].resample(resample_Hz)
     times = cs.times()
     shift = -cs.stats.sac.b
@@ -113,12 +113,12 @@ time_window = 40
 n_preds = time_window * resample_Hz # Maximum number of times the peak could be found, from sliding the window
 
 file_dir = '../../seismograms/cross_secs/15caps_wig/'
-files = np.sort([f for f in os.listdir(file_dir) if '.sac' in f])
+files = np.sort([f.rstrip('.sac') for f in os.listdir(file_dir) if '.sac' in f])
 with open(file_dir.split('/')[-2] + '_preds.csv', 'w+') as pred_csv:
     print('file,410pred,410err,410amp,410qual,660pred,660err,660amp,660qual', file=pred_csv)
 
 for f, cs_file in enumerate(files):
     print('File', f+1, '/', len(files),'...', end=' ')
-    string_410, string_660 = find_Precursors(file_dir, cs_file, pos_model)
+    string_410, string_660 = find_Precursors(file_dir, cs_file+'.sac', pos_model)
     with open(file_dir.split('/')[-2] + '_preds.csv', 'a') as pred_csv:
         print(cs_file + ',' + string_410 + ',' + string_660, file=pred_csv)

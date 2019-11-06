@@ -30,8 +30,8 @@ for d in directories:
     except:
         pass
 
-train_dir = '../../../seismograms/SS_kept/'
-test_dir = '../../../seismograms/SS_kept_test/'
+train_dir = '../../seismograms/SS_kept/'
+test_dir = '../../seismograms/SS_kept_test/'
 train_files = np.sort(os.listdir(train_dir))
 test_files = np.sort(os.listdir(test_dir))
 
@@ -55,5 +55,5 @@ test_seismos = test_seismos + test_noise
 train_seismos = train_seismos.reshape(train_seismos.shape[0], train_seismos.shape[1], 1)
 test_seismos = test_seismos.reshape(test_seismos.shape[0], test_seismos.shape[1], 1)
 
-np.save('data/train/train_seismos', train_seismos)
-np.save('data/test/test_seismos', test_seismos)
+np.save('data/train/train_seismos_noise_2sigma', train_seismos)
+np.save('data/test/test_seismos_noise_2sigma', test_seismos)

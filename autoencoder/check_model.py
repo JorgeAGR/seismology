@@ -121,8 +121,10 @@ def RossNet_CAE(input_length, compression_size):
     return autoencoder, None, None#encoder, decoder
 
 # Load training and testing data
-x_train = np.load('data/train/train_seismos.npy')
-x_test = np.load('data/test/test_seismos.npy')
+x_train = np.load('data/train/train_seismos_noise_2sigma.npy')
+y_train = np.load('data/train/train_seismos.npy')
+x_test = np.load('data/test/test_seismos_noise_2sigma.npy')
+y_test = np.load('data/test/test_seismos.npy')
 # Shift to [0, 1] interval
 '''
 What the hell?! It works when training on [-1, 1] data, but predict with [0, 1]!?!??!
@@ -153,9 +155,9 @@ Project done! Kinda. Have to play with denoising now.
 # Activation function of output has to be changed for [0,1] data
 #autoencoder.load_weights('rossnet_convautoencoder_nodense_-11data_mse_weights')
 
-autoencoder = load_model('models/rossnet_convautoencoder_transfer_dense_mse.h5')
+autoencoder = load_model('models/rossnet_convautoencoder_denoiser_2sigma_mse.h5')
 
 # Predict for an instance and plot the actual and reconstructed for comparison
-test_rec = autoencoder.predict(x_train[0].reshape(1, x_train.shape[1], 1)).flatten()
-plt.plot(x_train[0])
+test_rec = autoencoder.predict(y_test[10].reshape(1, x_train.shape[1], 1)).flatten()
+plt.plot(y_test[10])
 plt.plot(test_rec)
