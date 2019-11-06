@@ -74,10 +74,22 @@ def shift_Max(seis, pred_var):
 #cs = obspy.read('../../seismograms/cross_secs/10caps_wig/n0.872_4.29.sac')
 
 #cs = obspy.read('../../seismograms/cross_secs/10caps_wig/0.174_0.19.sac')
-cs = obspy.read('../../seismograms/cross_secs/10caps_wig/0.348_1.76.sac')
+    
 
-file = '0.087_3.96.sac'
-with open('5caps_wig_preds.csv') as pred_csv:
+cap = '15'
+file = 'n1.308_4.71'
+
+cs = obspy.read('../../seismograms/cross_secs/' + cap + 'caps_wig/' + file + '.sac')
+
+def get_Lauren_Pred(cap, precursor, csbin):
+    file_path = 'cross_secs_dat/lauren_pred/' + cap + 'caps_S' + precursor + 'S.dat'
+    with open(file_path) as datfile:
+        dat_bins = np.asarray([line.split(' ')[0] for line in datfile])
+    dat_times = np.loadtxt(file_path, usecols=(1, 2))
+    ind = np.where(dat_bins == csbin)[0][0]
+    return dat_times[ind,0], dat_times[ind,1]
+
+with open('cross_secs_dat/model_pred/15caps_wig_preds.csv') as pred_csv:
     for line in pred_csv:
         if file in line:
             pred_line = line
@@ -90,15 +102,21 @@ shift = -cs.stats.sac.b
 b = cs.stats.sac.b + shift
 e = cs.stats.sac.e + shift
 arr_410 = float(pred_line.split(',')[1]) + shift
-arr_660 = float(pred_line.split(',')[3]) + shift
+arr_660 = float(pred_line.split(',')[5]) + shift
+lauren_410, _ = get_Lauren_Pred(cap, '410', file) + shift
+lauren_660, _ = get_Lauren_Pred(cap, '660', file) + shift
 
 cs_norm = cs.data / np.abs(cs.data).max()
 fig, ax = plt.subplots()
 ax.plot(times, cs_norm, color='black')
 for i, ar in enumerate([arr_660, arr_410]):
+    print(ar - shift)
     ax.axvline(ar, color='blue', linestyle='--')
     #ax.text(ar-5, 0.1, np.sort(counts_pos)[-2:][i], rotation=90, fontsize=16)
-#ax.axvline(ar, color='blue', linestyle='--', label='positive model')
+ax.axvline(ar, color='blue', linestyle='--', label='model')
+for i, ar in enumerate([lauren_660, lauren_410]):
+    ax.axvline(ar, color='red', linestyle='--')
+ax.axvline(ar, color='red', linestyle='--', label='lauren')
 #for i, ar in enumerate(arrivals_neg[np.argsort(counts_neg)][-5:]):
 #   ax.axvline(ar, color='red', linestyle='--')
 #   ax.text(ar-5, 0.1, np.sort(counts_neg)[-5:][i], rotation=90, fontsize=16)
@@ -107,7 +125,8 @@ ax.set_ylim(cs_norm.min(), cs_norm.max())
 ax.set_xlim(times.min(), times.max())
 ax.set_xlabel('Time [s]')
 ax.set_ylabel('Amplitude')
-ax.set_title('5caps_wig/0.087_3.96')
+ax.set_title(cap + 'cap/' + file)
 ax.xaxis.set_minor_locator(mtick.MultipleLocator(10))
 #ax.legend(loc='upper right')
 fig.tight_layout()
+plt.show()
