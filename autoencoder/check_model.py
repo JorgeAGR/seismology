@@ -158,6 +158,7 @@ Project done! Kinda. Have to play with denoising now.
 autoencoder = load_model('models/rossnet_convautoencoder_denoiser_2sigma_mse.h5')
 
 # Predict for an instance and plot the actual and reconstructed for comparison
-test_rec = autoencoder.predict(y_test[10].reshape(1, x_train.shape[1], 1)).flatten()
-plt.plot(y_test[10])
+index = 2500
+test_rec = autoencoder.predict(y_test[index].reshape(1, x_train.shape[1], 1)).flatten()
+plt.plot(y_test[index])
 plt.plot(test_rec)
