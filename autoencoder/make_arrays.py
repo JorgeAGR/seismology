@@ -37,9 +37,20 @@ test_files = np.sort(os.listdir(test_dir))
 
 resample_Hz = 10
 data_points = 5000
+# max noise lauren accepts
+max_noise = 1/3
+# sigmas to consider for noise level
+noise_sigmas = 2
+noise_std = max_noise / noise_sigmas
 
 train_seismos = sac2npy(train_dir, train_files)
 test_seismos = sac2npy(test_dir, test_files)
+
+train_noise = np.random.normal(0, noise_std, train_seismos.shape)
+test_noise = np.random.normal(0, noise_std, test_seismos.shape)
+
+train_seismos = train_seismos + train_noise
+test_seismos = test_seismos + test_noise
 
 train_seismos = train_seismos.reshape(train_seismos.shape[0], train_seismos.shape[1], 1)
 test_seismos = test_seismos.reshape(test_seismos.shape[0], test_seismos.shape[1], 1)
