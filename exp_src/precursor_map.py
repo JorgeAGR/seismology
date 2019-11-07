@@ -15,7 +15,7 @@ from mpl_toolkits.basemap import Basemap
 
 # Settings for plots
 golden_ratio = (np.sqrt(5) + 1) / 2
-width = 12
+width = 15
 height = width / golden_ratio
 
 mpl.rcParams['figure.figsize'] = (width, height)
@@ -72,14 +72,56 @@ def cap2latlon(bins):
         latlon[i,1] = np.rad2deg(lon)
     return latlon
 
-lauren_bins, lauren_times, lauren_errors = get_Lauren_Pred('15', '410')
+def get_MinMax_Times(l_times, m_times):
+    min_time = l_times.min()
+    max_time = l_times.max()
+    
+    model_min = m_times.min()
+    model_max = m_times.max()
+    
+    if model_min < min_time:
+        min_time = model_min
+    if model_max > max_time:
+        max_time = model_max
+    
+    return min_time, max_time
+
+discontinuity = '660'
+cap = '15'
+
+lauren_bins, lauren_times, lauren_errors = get_Lauren_Pred(cap, discontinuity)
 lauren_latlon = cap2latlon(lauren_bins)
 
-model_bins, model_times, model_errors = get_Model_Pred('15', '410')
+'''
+TEMPORARY. REMOVE WHEN LAUREN FIXES
+'''
+lauren_times = lauren_times-4.2
+
+model_bins, model_times, model_errors = get_Model_Pred(cap, discontinuity)
 model_latlon = cap2latlon(model_bins)
 
-fig, ax = plt.subplots(nrows=2, ncols=2)
-for l, lon_0 in enumerate([0, 180]):
+#fig, ax = plt.subplots(nrows=3, ncols=2)
+fig = plt.figure()
+rows = 13
+cbar_span = 1
+cols = rows - cbar_span
+span = cols//2
+ax = [[plt.subplot2grid((rows,cols), (0,0), colspan=span, rowspan=span, fig=fig),
+      plt.subplot2grid((rows,cols), (0,span), colspan=span, rowspan=span, fig=fig)],
+      plt.subplot2grid((rows,cols), (span,0), colspan=cols, rowspan=1, fig=fig),
+      [plt.subplot2grid((rows,cols), (span+cbar_span,0), colspan=span, rowspan=span, fig=fig),
+      plt.subplot2grid((rows,cols), (span+cbar_span,span), colspan=span, rowspan=span, fig=fig)]]
+fig.text(0.46, 0.925, 'Model Map', fontweight='bold')
+fig.text(0.45, 0.375, 'Bootstrap Map', fontweight='bold')
+fig.text(0.475, 0.525, 'S'+discontinuity+'S', fontweight='bold')
+
+cmap = mpl.cm.YlGnBu
+min_time, max_time = get_MinMax_Times(lauren_times, model_times)
+norm = mpl.colors.Normalize(vmin=min_time, vmax=max_time)
+cbar = mpl.colorbar.ColorbarBase(ax[1], cmap=cmap, norm=norm, orientation='horizontal')
+cbar.ax.tick_params(length=5)
+cbar.set_label('Time Before Main Arrival [s]')
+for l, lon_0 in enumerate([-180, 0]):
     globe_m = Basemap(projection='moll', lon_0=lon_0, resolution='c', ax=ax[0][l])
     globe_m.drawmapboundary(fill_color='lightgray')
     globe_m.drawcoastlines(color='gray')
@@ -87,18 +129,19 @@ for l, lon_0 in enumerate([0, 180]):
     globe_m.drawmeridians(np.arange(0.,360.,45.))
     #globe.fillcontinents(color='black')
     #globe.scatter(lauren_latlon[85:,0], lauren_latlon[85:,1], color='red', s=10, latlon=True)
-    globe_m.scatter(model_latlon[:,1], model_latlon[:,0], c=model_times, s=50, latlon=True, cmap='YlGnBu', zorder=10)
+    globe_m.scatter(model_latlon[:,1], model_latlon[:,0], c=model_times, s=50, latlon=True, cmap=cmap, norm=norm, zorder=10)
     
-    globe_l = Basemap(projection='moll', lon_0=lon_0, resolution='c', ax=ax[1][l])
+    globe_l = Basemap(projection='moll', lon_0=lon_0, resolution='c', ax=ax[2][l])
     globe_l.drawmapboundary(fill_color='lightgray')
     globe_l.drawcoastlines(color='gray')
     globe_l.drawparallels([-45, 0, 45])
     globe_l.drawmeridians(np.arange(0.,360.,45.))
     #globe.fillcontinents(color='black')
     #globe.scatter(lauren_latlon[85:,0], lauren_latlon[85:,1], color='red', s=10, latlon=True)
-    globe_l.scatter(lauren_latlon[:,1], lauren_latlon[:,0], c=lauren_times, s=50, latlon=True, cmap='YlGnBu', zorder=10)
+    globe_l.scatter(lauren_latlon[:,1], lauren_latlon[:,0], c=lauren_times, s=50, latlon=True, cmap=cmap, norm=norm, zorder=10)
     #plt.show()
-    
+fig.tight_layout(pad=0.5)
+'''
 # figs showing time diffs
 fig2, ax2 = plt.subplots()
 for l, lon_0 in enumerate([0, 180]):
@@ -111,3 +154,4 @@ for l, lon_0 in enumerate([0, 180]):
     #globe.fillcontinents(color='black')
     #globe.scatter(lauren_latlon[85:,0], lauren_latlon[85:,1], color='red', s=10, latlon=True)
     globe_diff.scatter(model_latlon[:,1], model_latlon[:,0], c=diff_times, s=50, latlon=True, cmap='YlGnBu', zorder=10)
+'''
