@@ -121,8 +121,8 @@ def RossNet_CAE(input_length, compression_size):
     return autoencoder, None, None#encoder, decoder
 
 # Load training and testing data
-x_train = np.load('data/train/train_seismos_noise_2sigma.npy')
-y_train = np.load('data/train/train_seismos.npy')
+#x_train = np.load('data/train/train_seismos_noise_2sigma.npy')
+#y_train = np.load('data/train/train_seismos.npy')
 x_test = np.load('data/test/test_seismos_noise_2sigma.npy')
 y_test = np.load('data/test/test_seismos.npy')
 # Shift to [0, 1] interval
@@ -155,10 +155,25 @@ Project done! Kinda. Have to play with denoising now.
 # Activation function of output has to be changed for [0,1] data
 #autoencoder.load_weights('rossnet_convautoencoder_nodense_-11data_mse_weights')
 
-autoencoder = load_model('models/rossnet_convautoencoder_denoiser_2sigma_mse.h5')
+autoencoder = load_model('models/rossnet_convautoencoder_denoiser_2sigma_mse_linear.h5')
 
 # Predict for an instance and plot the actual and reconstructed for comparison
-index = 2500
-test_rec = autoencoder.predict(y_test[index].reshape(1, x_train.shape[1], 1)).flatten()
-plt.plot(y_test[index])
-plt.plot(test_rec)
+times = np.arange(0, 500, 0.1)
+index = np.random.randint(0, 5000)
+eg_rec = autoencoder.predict(x_test[index].reshape(1, x_test.shape[1], 1)).flatten()
+fig, ax = plt.subplots(nrows=2, sharex=True)
+ax[0].plot(times, x_test[index], color='lightgray', label='Noisy')
+ax[0].plot(times, y_test[index], label='Actual')
+ax[0].plot(times, eg_rec, label='Denoised')
+ax[0].set_ylim(-1,1)
+ax[0].set_xlim(0, 500)
+ax[0].legend()
+
+residuals = eg_rec - y_test[index].flatten()
+error = (residuals**2).mean()
+ax[1].plot(times, residuals, color='black', label='Residuals')
+ax[1].set_ylim(-1,1)
+ax[1].set_xlim(0, 500)
+ax[1].legend()
+
+fig.tight_layout(pad=0.5)
