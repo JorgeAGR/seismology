@@ -76,8 +76,8 @@ def shift_Max(seis, pred_var):
 #cs = obspy.read('../../seismograms/cross_secs/10caps_wig/0.174_0.19.sac')
     
 
-cap = '15'
-file = 'n1.308_4.71'
+cap = '5'
+file = 'n1.046_0.26'
 
 cs = obspy.read('../../seismograms/cross_secs/' + cap + 'caps_wig/' + file + '.sac')
 
@@ -87,30 +87,52 @@ def get_Lauren_Pred(cap, precursor, csbin):
         dat_bins = np.asarray([line.split(' ')[0] for line in datfile])
     dat_times = np.loadtxt(file_path, usecols=(1, 2))
     ind = np.where(dat_bins == csbin)[0][0]
-    return dat_times[ind,0], dat_times[ind,1]
+    return dat_times[ind,0]#, dat_times[ind,1]
 
-with open('cross_secs_dat/model_pred/15caps_wig_preds.csv') as pred_csv:
+def get_Lauren_Pred_Bootstraps(cap, precursor, csbin):
+    '''
+    As per Lauren:
+    "Columns are: Time, slowness, mean amplitude value, standard deviation
+    So you will use $4 as the error measurement. $3 should correspond to the original cross-section, but may not for messy data."
+    '''
+    if precursor == '410':
+        min_t, max_t = -170, -140
+    elif precursor == '660':
+        min_t, max_t = -240, -210
+    
+    cap_path = 'cross_secs_dat/other_lauren/' + cap + 'caps/'
+    bin_file = csbin
+    bin_file += '_bootstrap.dat'
+    dat_file = np.loadtxt(cap_path + bin_file)
+    ind_range = np.asarray([i for i in range(len(dat_file[:,0])) if min_t < dat_file[i,0] < max_t])
+    arrival_ind = dat_file[ind_range,2].argmax()
+    dat_time = dat_file[ind_range,0][arrival_ind] # arrival time
+    dat_error = dat_file[ind_range,3][arrival_ind] # error?? of what?
+    
+    return dat_time#, dat_error
+
+with open('cross_secs_dat/model_pred/'+cap+'caps_wig_preds.csv') as pred_csv:
     for line in pred_csv:
-        if file in line:
+        if file == line.split(',')[0].rstrip('.sac'):
             pred_line = line
             break
 
 cs = cs[0].resample(10)
-times = cs.times()
 
 shift = -cs.stats.sac.b
+times = cs.times() - shift
 b = cs.stats.sac.b + shift
 e = cs.stats.sac.e + shift
-arr_410 = float(pred_line.split(',')[1]) + shift
-arr_660 = float(pred_line.split(',')[5]) + shift
-lauren_410, _ = get_Lauren_Pred(cap, '410', file) + shift
-lauren_660, _ = get_Lauren_Pred(cap, '660', file) + shift
+arr_410 = float(pred_line.split(',')[1])
+arr_660 = float(pred_line.split(',')[5])
+lauren_410 = get_Lauren_Pred_Bootstraps(cap, '410', file) - 4.2 # temp 4.2 shift from error by lauren
+lauren_660 = get_Lauren_Pred_Bootstraps(cap, '660', file) - 4.2
 
 cs_norm = cs.data / np.abs(cs.data).max()
 fig, ax = plt.subplots()
 ax.plot(times, cs_norm, color='black')
 for i, ar in enumerate([arr_660, arr_410]):
-    print(ar - shift)
+    print(ar)
     ax.axvline(ar, color='blue', linestyle='--')
     #ax.text(ar-5, 0.1, np.sort(counts_pos)[-2:][i], rotation=90, fontsize=16)
 ax.axvline(ar, color='blue', linestyle='--', label='model')

@@ -37,15 +37,42 @@ def get_Lauren_Pred(cap, precursor):
     dat_times = np.loadtxt(file_path, usecols=(1, 2))
     return dat_bins, dat_times[:,0], dat_times[:,1]
 
+def get_Lauren_Pred_Bootstraps(cap, precursor):
+    '''
+    As per Lauren:
+    "Columns are: Time, slowness, mean amplitude value, standard deviation
+    So you will use $4 as the error measurement. $3 should correspond to the original cross-section, but may not for messy data."
+    '''
+    if precursor == '410':
+        min_t, max_t = -165, -145
+    elif precursor == '660':
+        min_t, max_t = -235, -215
+    
+    cap_path = 'cross_secs_dat/other_lauren/' + cap + 'caps/'
+    dat_bins = np.sort([file.rstrip('_bootstrap.dat') for file in os.listdir(cap_path)])
+    dat_times = np.zeros(len(dat_bins))
+    dat_errors = np.zeros(len(dat_bins))
+    for i, bin_file in enumerate(dat_bins):
+        bin_file += '_bootstrap.dat'
+        dat_file = np.loadtxt(cap_path + bin_file)
+        ind_range = np.asarray([i for i in range(len(dat_file[:,0])) if min_t < dat_file[i,0] < max_t])
+        arrival_ind = dat_file[ind_range,2].argmax()
+        dat_times[i] = dat_file[ind_range,0][arrival_ind] # arrival time
+        dat_errors[i] = dat_file[ind_range,3][arrival_ind] # error?? of what?
+    
+    return dat_bins, dat_times, dat_errors
+
 def get_Model_Pred(cap, precursor):
     file_path = 'cross_secs_dat/model_pred/' + cap + 'caps_wig_preds.csv'
     df = pd.read_csv(file_path)
     df = df.loc[:, ['file', precursor+'pred', precursor+'err', precursor+'amp', precursor+'qual']]
     
     '''
-    Line for now. Will likeyl remove the .sac from pred file in the future.
+    Line for now. Will likely remove the .sac from pred file in the future.
     UPDATE: Actual script removes extension twice. It caused weid ordering in the
     files. Remove once new file is generated. See below as well.
+    This has been fixed in the script, so remove the following once a new file
+    is generated.
     '''
     df.loc[:, 'file'] = [string.rstrip('.sac') for string in df['file'].values]
     
@@ -86,21 +113,37 @@ def get_MinMax_Times(l_times, m_times):
     
     return min_time, max_time
 
-discontinuity = '660'
-cap = '15'
+discontinuity = '410'
+cap = '5'
 
-lauren_bins, lauren_times, lauren_errors = get_Lauren_Pred(cap, discontinuity)
+lauren_bins, lauren_times, lauren_errors = get_Lauren_Pred_Bootstraps(cap, discontinuity)
 lauren_latlon = cap2latlon(lauren_bins)
 
 '''
 TEMPORARY. REMOVE WHEN LAUREN FIXES
 '''
-lauren_times = lauren_times-4.2
+#lauren_times = lauren_times-4.2
+
+
 
 model_bins, model_times, model_errors = get_Model_Pred(cap, discontinuity)
 model_latlon = cap2latlon(model_bins)
 
-#fig, ax = plt.subplots(nrows=3, ncols=2)
+'''
+TEMPORARY. Figure how to deal with this?? 
+Finding extra stuff ruins the file. It will find, say, something before the 410 and the 410.
+But since only keep the 2 strongest predictions, 660 may be strong enough but gets thrown away!
+Find solution to this...
+'''
+less = np.where(-165 < model_times)
+greater = np.where(model_times < -145)
+inds = np.intersect1d(less, greater)
+
+model_latlon = model_latlon[inds]
+model_times = model_times[inds]
+
+
+
 fig = plt.figure()
 rows = 13
 cbar_span = 1

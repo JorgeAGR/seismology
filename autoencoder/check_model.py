@@ -7,7 +7,7 @@ Created on Wed Oct 16 22:28:30 2019
 
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.cluster import KMeans
+from sklearn.preprocessing import MinMaxScaler
 from keras.layers import Input, Dense, Conv1D, MaxPooling1D, UpSampling1D, BatchNormalization, Reshape, Flatten
 from keras.models import Model, load_model
 from keras.optimizers import Adam
@@ -120,12 +120,18 @@ def RossNet_CAE(input_length, compression_size):
 
     return autoencoder, None, None#encoder, decoder
 
+def rescale(data, scaling=(0,1)):
+    scaler = MinMaxScaler(feature_range=scaling)
+    for i in range(len(data)):
+        data[i] = scaler.fit_transform(data[i].reshape(-1,1))
+    return data
+
 # Load training and testing data
 #x_train = np.load('data/train/train_seismos_noise_2sigma.npy')
 #y_train = np.load('data/train/train_seismos.npy')
 x_test = np.load('data/test/test_seismos_noise_2sigma.npy')
 y_test = np.load('data/test/test_seismos.npy')
-# Shift to [0, 1] interval
+
 '''
 What the hell?! It works when training on [-1, 1] data, but predict with [0, 1]!?!??!
 Using rossnet_convautoe..._nodense_mse_weights
@@ -143,8 +149,9 @@ at the top of these comment section. -- Strike that, at 2nd epoch reached ~5e-4 
 
 Project done! Kinda. Have to play with denoising now.
 '''
-#x_train = (x_train + 1)/2
-#x_test = (x_test + 1)/2 
+# Shift to [0, 1] interval
+#x_test = rescale(x_test)
+#y_test = rescale(y_test)
 
 # If using vanilla autoencoder
 #x_train = x_train.reshape(x_train.shape[0], x_train.shape[1])
@@ -155,7 +162,7 @@ Project done! Kinda. Have to play with denoising now.
 # Activation function of output has to be changed for [0,1] data
 #autoencoder.load_weights('rossnet_convautoencoder_nodense_-11data_mse_weights')
 
-autoencoder = load_model('models/rossnet_convautoencoder_denoiser_2sigma_mse_linear.h5')
+autoencoder = load_model('models/rossnet_convautoencoder_denoiser_2sigma_mae_linear.h5')
 
 # Predict for an instance and plot the actual and reconstructed for comparison
 times = np.arange(0, 500, 0.1)
@@ -171,6 +178,7 @@ ax[0].legend()
 
 residuals = eg_rec - y_test[index].flatten()
 error = (residuals**2).mean()
+ax[1].text(10, 0.75, 'MSE: {:.2}'.format(error))
 ax[1].plot(times, residuals, color='black', label='Residuals')
 ax[1].set_ylim(-1,1)
 ax[1].set_xlim(0, 500)

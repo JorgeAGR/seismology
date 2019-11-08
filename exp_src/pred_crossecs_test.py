@@ -73,10 +73,9 @@ time_window = 40
 #cs = obspy.read('../../seismograms/cross_secs/5caps_wig/0.087_0.54.sac')
 #cs = obspy.read('../../seismograms/cross_secs/5caps_wig/0.087_2.70.sac')
 
-cs = obspy.read('../../seismograms/cross_secs/5caps_wig/0.087_0.09.sac')
-
-files = np.sort(os.listdir('../../seismograms/cross_secs/5caps_wig/'))
-#cs = obspy.read('../../seismograms/cross_secs/5caps_wig/' + files[241])
+cap = '5'
+file = '0.174_1.71'
+cs = obspy.read('../../seismograms/cross_secs/'+cap+'caps_wig/'+file+'.sac')
 
 cs = cs[0].resample(10)
 times = cs.times()
