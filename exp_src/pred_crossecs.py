@@ -6,17 +6,14 @@ Created on Mon Sep 30 10:34:06 2019
 @author: jorgeagr
 """
 
-import numpy as np
 import os
 import obspy
 import numpy as np
+import pandas as pd
 from keras.models import load_model
 import keras.losses
 import keras.metrics
 from tensorflow.losses import huber_loss
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-import matplotlib.ticker as mtick
 from sklearn.cluster import DBSCAN
 
 def cut_Window(cross_sec, times, t_i, t_f):
@@ -114,6 +111,60 @@ def find_Precursors(file_dir, cs_file, model, relevant_preds=2):
     result_strings = [make_string(i) for i in range(relevant_preds)]
     return result_strings
     
+#'15caps_wig_preds.csv'
+def find_410_660(pred_csv_path):
+    df = pd.read_csv(pred_csv_path)
+    pred_inds = np.asarray([1, 5, 9, 13, 17])
+    err_inds = pred_inds + 1
+    amp_inds = err_inds + 1
+    qual_inds = amp_inds + 1
+    
+    arrivals = df.values[:,pred_inds].flatten()
+    errors = df.values[:,err_inds]
+    amps = df.values[:,amp_inds]
+    qualities = df.values[:,qual_inds]
+    
+    dbscan = DBSCAN(eps=5, min_samples=len(df)*9//10)
+    dbscan.fit(arrivals.reshape(-1,1))
+    
+    clusters = np.unique(dbscan.labels_)
+    if -1 in clusters:
+        clusters = clusters[1:]
+    avg_preds = np.asarray([arrivals[dbscan.labels_ == c].mean() for c in clusters])
+    sort_ind = np.argsort(avg_preds)
+    cluster660, cluster410 = clusters[sort_ind]
+    
+    labels = dbscan.labels_.reshape(len(df), len(pred_inds))
+    
+    ind410 = np.zeros(len(df), dtype=np.int)
+    ind660 = np.zeros(len(df), dtype=np.int)
+    '''
+    Need to implement removal of predictions that did not find either discontinuity
+    '''
+    for i in range(len(labels)):
+        l, counts = np.unique(labels[i], return_counts=True)
+        for c in clusters:
+            if counts[l==c][0] > 1:
+                where = np.argwhere(labels[i]==c).flatten()
+                maxqual = np.argmax(qualities[i][where])
+                throw = [j for j in range(len(where)) if j != maxqual]
+                labels[i][where[throw]] = -1 # problem
+        ind410[i] = np.where(labels[i]==cluster410)[0][0]
+        ind660[i] = np.where(labels[i]==cluster660)[0][0]
+        
+    arrivals = arrivals.reshape(len(df), len(pred_inds))
+    
+    df_inds = range(len(df))
+    preds410, preds660 = arrivals[df_inds,ind410], arrivals[df_inds,ind660]
+    errs410, errs660 = errors[df_inds,ind410], errors[df_inds,ind660]
+    amps410, amps660 = amps[df_inds,ind410], amps[df_inds,ind660]
+    quals410,quals660 = qualities[df_inds,ind410], qualities[df_inds,ind660]
+    
+    df_disc = pd.DataFrame(data = {'file':df['file'].values,
+                                  '410pred':preds410, '410err':errs410, '410amp':amps410, '410qual':quals410,
+                                  '660pred':preds660, '660err':errs660, '660amp':amps660, '660qual':quals660})
+    return df_disc
+
 keras.losses.huber_loss = huber_loss
 pos_model = load_model('../auto_seismo/models/arrival_SS_pos_model_0040.h5')
 #neg_model = load_model('../auto_seismo/models/arrival_SS_neg_model_0040.h5')
@@ -124,7 +175,8 @@ n_preds = time_window * resample_Hz # Maximum number of times the peak could be 
 
 file_dir = '../../seismograms/cross_secs/15caps_wig/'
 files = np.sort([f.rstrip('.sac') for f in os.listdir(file_dir) if '.sac' in f])
-with open(file_dir.split('/')[-2] + '_preds.csv', 'w+') as pred_csv:
+write_path = './'
+with open(write_path + file_dir.split('/')[-2] + '_preds.csv', 'w+') as pred_csv:
     '''
     print('file,410pred,410err,410amp,410qual,660pred,660err,660amp,660qual', file=pred_csv)
     '''
@@ -146,8 +198,11 @@ for f, cs_file in enumerate(files):
     # Removed and readded the .sac extension due to getting different sorting
     # of files when leaving the extension in the string
     results = find_Precursors(file_dir, cs_file+'.sac', pos_model, relevant_preds)
-    with open(file_dir.split('/')[-2] + '_preds.csv', 'a') as pred_csv:
+    with open(write_path + file_dir.split('/')[-2] + '_preds.csv', 'a') as pred_csv:
         print(cs_file, end=',', file=pred_csv)
         for i in range(relevant_preds-1):
             print(results[i], end=',', file=pred_csv)
         print(results[-1], file=pred_csv)
+
+found = find_410_660(write_path + file_dir.split('/')[-2] + '_preds.csv')
+found.to_csv(write_path + file_dir.split('/')[-2] + '_results.csv', index=False)

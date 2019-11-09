@@ -49,11 +49,19 @@ for i in range(len(labels)):
         if counts[l==c][0] > 1:
             where = np.argwhere(labels[i]==c).flatten()
             maxqual = np.argmax(qualities[i][where])
-            labels[i][where[~maxqual]] = -1
+            throw = [j for j in range(len(where)) if j != maxqual]
+            labels[i][where[throw]] = -1 # problem
     ind410[i] = np.where(labels[i]==cluster410)[0][0]
     ind660[i] = np.where(labels[i]==cluster660)[0][0]
     
 arrivals = arrivals.reshape(len(df), len(pred_inds))
 
-preds410, preds660 = arrivals[range(len(df)),ind410], arrivals[range(len(df)),ind660]
- 
+df_inds = range(len(df))
+preds410, preds660 = arrivals[df_inds,ind410], arrivals[df_inds,ind660]
+errs410, errs660 = errors[df_inds,ind410], errors[df_inds,ind660]
+amps410, amps660 = amps[df_inds,ind410], amps[df_inds,ind660]
+quals410,quals660 = qualities[df_inds,ind410], qualities[df_inds,ind660]
+
+df_new = pd.DataFrame(data = {'file':df['file'].values,
+                              '410pred':preds410, '410err':errs410, '410amp':amps410, '410qual':quals410,
+                              '660pred':preds660, '660err':errs660, '660amp':amps660, '660qual':quals660})
