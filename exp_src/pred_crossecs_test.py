@@ -74,7 +74,7 @@ time_window = 40
 #cs = obspy.read('../../seismograms/cross_secs/5caps_wig/0.087_2.70.sac')
 
 cap = '5'
-file = '0.174_1.71'
+file = 'n1.046_0.26'
 cs = obspy.read('../../seismograms/cross_secs/'+cap+'caps_wig/'+file+'.sac')
 
 cs = cs[0].resample(10)
@@ -161,10 +161,11 @@ ax.plot(time_i_grid[1:][zeros], preds_diff[zeros], '.')
 ax.plot(time_i_grid[1:], jumps)
 ax.set_ylim(-5, 10)
 '''
+times = cs.times() - shift
 fig, ax = plt.subplots()
-ax.plot(time_i_grid, window_preds, '.', color='black')
+ax.plot(time_i_grid-shift, window_preds-shift, '.', color='black')
 for cluster in clusters:#[sorted_ind]:
-    ax.plot(time_i_grid[dbscan.labels_ == cluster], window_preds[dbscan.labels_ == cluster], '.')
+    ax.plot(time_i_grid[dbscan.labels_ == cluster]-shift, window_preds[dbscan.labels_ == cluster]-shift, '.')
 #ax.plot(time_i_grid, window_negs, '.', color='black')
 #ax.plot(time_i_grid[plateus], window_preds[plateus], '.', color='red')
 ax.set_xlabel('Starting time [s]')
@@ -176,9 +177,9 @@ cs_norm = cs.data / np.abs(cs.data).max()
 fig, ax = plt.subplots()
 ax.plot(times, cs_norm, color='black')
 for i, ar in enumerate(arrivals_pos[np.argsort(counts_pos)][-2:]):
-    ax.axvline(ar, color='blue', linestyle='--')
-    ax.text(ar-5, 0.1, np.sort(counts_pos)[-2:][i], rotation=90, fontsize=16)
-ax.axvline(ar, color='blue', linestyle='--', label='positive model')
+    ax.axvline(ar-shift, color='blue', linestyle='--')
+    ax.text(ar-5-shift, 0.1, np.sort(counts_pos)[-2:][i], rotation=90, fontsize=16)
+ax.axvline(ar-shift, color='blue', linestyle='--', label='positive model')
 #for i, ar in enumerate(arrivals_neg[np.argsort(counts_neg)][-5:]):
 #   ax.axvline(ar, color='red', linestyle='--')
 #   ax.text(ar-5, 0.1, np.sort(counts_neg)[-5:][i], rotation=90, fontsize=16)

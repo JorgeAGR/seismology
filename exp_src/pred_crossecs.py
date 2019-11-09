@@ -45,7 +45,7 @@ def shift_Max(seis, pred_var):
         #    break
     return arrival
 
-def find_Precursors(file_dir, cs_file, model):
+def find_Precursors(file_dir, cs_file, model, relevant_preds=2):
     cs = obspy.read(file_dir+cs_file)
     cs_file = cs_file.rstrip('.sac')
     cs = cs[0].resample(resample_Hz)
@@ -81,17 +81,22 @@ def find_Precursors(file_dir, cs_file, model):
     if -1 in clusters:
         clusters = clusters[1:]
         counts = counts[1:]
-    relevant_preds = 2
+    #relevant_preds = 5
     discont_ind = np.argsort(counts)[-relevant_preds:]
     clusters = clusters[discont_ind]
     counts = counts[discont_ind]
     arrivals_pos = np.zeros(relevant_preds)
     arrivals_pos_err = np.zeros(relevant_preds)
+    arrivals_amps = np.zeros(relevant_preds)
     arrivals_quality = np.zeros(relevant_preds)
     for i, c in enumerate(clusters):
         arrivals_pos[i] = np.mean(window_preds[dbscan.labels_ == c])
         arrivals_pos_err[i] = np.std(window_preds[dbscan.labels_ == c])
         arrivals_quality[i] = counts[i] / n_preds
+        initamp = np.where(times < arrivals_pos[i])[0][-1]
+        arrivals_amps[i] = cs.data[initamp:initamp+2].max()
+    arrivals_pos = arrivals_pos - shift
+    '''
     disc_660, disc_410 = np.argsort(arrivals_pos)
     
     print('Finding amplitudes...')
@@ -104,21 +109,45 @@ def find_Precursors(file_dir, cs_file, model):
     string_410 = str(arrivals_pos[disc_410]) + ',' + str(arrivals_pos_err[disc_410]) + ',' + str(amp410) + ',' + str(arrivals_quality[disc_410])
     string_660 = str(arrivals_pos[disc_660]) + ',' + str(arrivals_pos_err[disc_660]) + ',' + str(amp660) + ',' + str(arrivals_quality[disc_660])
     return string_410, string_660
+    '''
+    make_string = lambda x: str(arrivals_pos[x]) + ',' + str(arrivals_pos_err[x]) + ',' + str(arrivals_amps[x]) + ',' + str(arrivals_quality[x])
+    result_strings = [make_string(i) for i in range(relevant_preds)]
+    return result_strings
     
 keras.losses.huber_loss = huber_loss
 pos_model = load_model('../auto_seismo/models/arrival_SS_pos_model_0040.h5')
 #neg_model = load_model('../auto_seismo/models/arrival_SS_neg_model_0040.h5')
 resample_Hz = 10
 time_window = 40
+relevant_preds = 5
 n_preds = time_window * resample_Hz # Maximum number of times the peak could be found, from sliding the window
 
 file_dir = '../../seismograms/cross_secs/15caps_wig/'
 files = np.sort([f.rstrip('.sac') for f in os.listdir(file_dir) if '.sac' in f])
 with open(file_dir.split('/')[-2] + '_preds.csv', 'w+') as pred_csv:
+    '''
     print('file,410pred,410err,410amp,410qual,660pred,660err,660amp,660qual', file=pred_csv)
+    '''
+    print_cols = lambda x: 'pred{0},err{0},amp{0},qual{0},'.format(x)
+    header_string = 'file,'
+    for i in range(relevant_preds):
+        header_string += print_cols(i)
+    header_string = header_string.rstrip(',')
+    print(header_string, file=pred_csv)
 
 for f, cs_file in enumerate(files):
+    '''
     print('File', f+1, '/', len(files),'...', end=' ')
     string_410, string_660 = find_Precursors(file_dir, cs_file+'.sac', pos_model)
     with open(file_dir.split('/')[-2] + '_preds.csv', 'a') as pred_csv:
         print(cs_file + ',' + string_410 + ',' + string_660, file=pred_csv)
+    '''
+    print('File', f+1, '/', len(files),'...', end=' ')
+    # Removed and readded the .sac extension due to getting different sorting
+    # of files when leaving the extension in the string
+    results = find_Precursors(file_dir, cs_file+'.sac', pos_model, relevant_preds)
+    with open(file_dir.split('/')[-2] + '_preds.csv', 'a') as pred_csv:
+        print(cs_file, end=',', file=pred_csv)
+        for i in range(relevant_preds-1):
+            print(results[i], end=',', file=pred_csv)
+        print(results[-1], file=pred_csv)

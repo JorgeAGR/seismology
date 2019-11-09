@@ -76,8 +76,8 @@ def shift_Max(seis, pred_var):
 #cs = obspy.read('../../seismograms/cross_secs/10caps_wig/0.174_0.19.sac')
     
 
-cap = '5'
-file = 'n1.046_0.26'
+cap = '15'
+file = '0.261_0'
 
 cs = obspy.read('../../seismograms/cross_secs/' + cap + 'caps_wig/' + file + '.sac')
 
@@ -125,8 +125,11 @@ b = cs.stats.sac.b + shift
 e = cs.stats.sac.e + shift
 arr_410 = float(pred_line.split(',')[1])
 arr_660 = float(pred_line.split(',')[5])
-lauren_410 = get_Lauren_Pred_Bootstraps(cap, '410', file) - 4.2 # temp 4.2 shift from error by lauren
-lauren_660 = get_Lauren_Pred_Bootstraps(cap, '660', file) - 4.2
+try:
+    lauren_410 = get_Lauren_Pred_Bootstraps(cap, '410', file)# - 4.2 # temp 4.2 shift from error by lauren
+    lauren_660 = get_Lauren_Pred_Bootstraps(cap, '660', file)#ls - 4.2
+except:
+    pass
 
 cs_norm = cs.data / np.abs(cs.data).max()
 fig, ax = plt.subplots()
@@ -136,9 +139,12 @@ for i, ar in enumerate([arr_660, arr_410]):
     ax.axvline(ar, color='blue', linestyle='--')
     #ax.text(ar-5, 0.1, np.sort(counts_pos)[-2:][i], rotation=90, fontsize=16)
 ax.axvline(ar, color='blue', linestyle='--', label='model')
-for i, ar in enumerate([lauren_660, lauren_410]):
-    ax.axvline(ar, color='red', linestyle='--')
-ax.axvline(ar, color='red', linestyle='--', label='lauren')
+try:
+    for i, ar in enumerate([lauren_660, lauren_410]):
+        ax.axvline(ar, color='red', linestyle=':')
+    ax.axvline(ar, color='red', linestyle=':', label='lauren')
+except:
+    pass
 #for i, ar in enumerate(arrivals_neg[np.argsort(counts_neg)][-5:]):
 #   ax.axvline(ar, color='red', linestyle='--')
 #   ax.text(ar-5, 0.1, np.sort(counts_neg)[-5:][i], rotation=90, fontsize=16)

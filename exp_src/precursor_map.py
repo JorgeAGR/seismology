@@ -120,7 +120,7 @@ lauren_bins, lauren_times, lauren_errors = get_Lauren_Pred_Bootstraps(cap, disco
 lauren_latlon = cap2latlon(lauren_bins)
 
 '''
-TEMPORARY. REMOVE WHEN LAUREN FIXES
+TEMPORARY. REMOVE WHEN LAUREN FIXES. Only needed for the first pred, not bootstraps
 '''
 #lauren_times = lauren_times-4.2
 
