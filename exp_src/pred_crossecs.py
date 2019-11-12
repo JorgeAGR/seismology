@@ -16,6 +16,14 @@ import keras.metrics
 from tensorflow.losses import huber_loss
 from sklearn.cluster import DBSCAN
 
+resample_Hz = 10
+time_window = 40
+relevant_preds = 5
+
+cap_size = 15
+file_dir = '../../seismograms/cross_secs/' + str(cap_size) + 'caps_wig/'
+
+
 def cut_Window(cross_sec, times, t_i, t_f):
     init = np.where(times == np.round(t_i, 1))[0][0]
     end = np.where(times == np.round(t_f, 1))[0][0]
@@ -168,12 +176,8 @@ def find_410_660(pred_csv_path):
 keras.losses.huber_loss = huber_loss
 pos_model = load_model('../auto_seismo/models/arrival_SS_pos_model_0040.h5')
 #neg_model = load_model('../auto_seismo/models/arrival_SS_neg_model_0040.h5')
-resample_Hz = 10
-time_window = 40
-relevant_preds = 5
 n_preds = time_window * resample_Hz # Maximum number of times the peak could be found, from sliding the window
 
-file_dir = '../../seismograms/cross_secs/15caps_wig/'
 files = np.sort([f.rstrip('.sac') for f in os.listdir(file_dir) if '.sac' in f])
 write_path = './'
 with open(write_path + file_dir.split('/')[-2] + '_preds.csv', 'w+') as pred_csv:

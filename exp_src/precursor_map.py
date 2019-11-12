@@ -114,7 +114,7 @@ def get_MinMax_Times(l_times, m_times):
     return min_time, max_time
 
 discontinuity = '410'
-cap = '5'
+cap = '15'
 
 lauren_bins, lauren_times, lauren_errors = get_Lauren_Pred_Bootstraps(cap, discontinuity)
 lauren_latlon = cap2latlon(lauren_bins)
@@ -135,12 +135,18 @@ Finding extra stuff ruins the file. It will find, say, something before the 410 
 But since only keep the 2 strongest predictions, 660 may be strong enough but gets thrown away!
 Find solution to this...
 '''
-less = np.where(-165 < model_times)
-greater = np.where(model_times < -145)
-inds = np.intersect1d(less, greater)
+#less = np.where(-165 < model_times)
+#greater = np.where(model_times < -145)
+#inds = np.intersect1d(less, greater)
 
-model_latlon = model_latlon[inds]
-model_times = model_times[inds]
+#model_latlon = model_latlon[inds]
+#model_times = model_times[inds]
+
+
+
+model_times = np.ones(len(model_times)) * 0
+lauren_times = np.ones(len(lauren_times)) * 0
+
 
 
 
