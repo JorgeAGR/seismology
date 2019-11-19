@@ -129,7 +129,7 @@ def rescale(data, scaling=(0,1)):
 # Load training and testing data
 #x_train = np.load('data/train/train_seismos_noise_2sigma.npy')
 #y_train = np.load('data/train/train_seismos.npy')
-x_test = np.load('data/test/test_seismos_noise_2sigma.npy')
+x_test = np.load('data/test/test_seismos_noise_3sigma.npy')
 y_test = np.load('data/test/test_seismos.npy')
 
 '''
@@ -166,8 +166,9 @@ autoencoder = load_model('models/rossnet_convautoencoder_denoiser_2sigma_mae_lin
 
 # Predict for an instance and plot the actual and reconstructed for comparison
 times = np.arange(0, 500, 0.1)
-index = np.random.randint(0, 5000)
+index = np.random.randint(0, len(x_test))
 eg_rec = autoencoder.predict(x_test[index].reshape(1, x_test.shape[1], 1)).flatten()
+snr = np.sqrt(x_test[index].mean()**2)
 fig, ax = plt.subplots(nrows=2, sharex=True)
 ax[0].plot(times, x_test[index], color='lightgray', label='Noisy')
 ax[0].plot(times, y_test[index], label='Actual')

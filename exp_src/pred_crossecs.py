@@ -118,9 +118,8 @@ def find_Precursors(file_dir, cs_file, model, relevant_preds=2):
     make_string = lambda x: str(arrivals_pos[x]) + ',' + str(arrivals_pos_err[x]) + ',' + str(arrivals_amps[x]) + ',' + str(arrivals_quality[x])
     result_strings = [make_string(i) for i in range(relevant_preds)]
     return result_strings
-    
-#'15caps_wig_preds.csv'
-def find_410_660(pred_csv_path):
+
+def find_410_660(pred_csv_path, eps=5, percent_data=0.9):
     df = pd.read_csv(pred_csv_path)
     pred_inds = np.asarray([1, 5, 9, 13, 17])
     err_inds = pred_inds + 1
@@ -132,43 +131,58 @@ def find_410_660(pred_csv_path):
     amps = df.values[:,amp_inds]
     qualities = df.values[:,qual_inds]
     
-    dbscan = DBSCAN(eps=5, min_samples=len(df)*9//10)
+    # Parameters to play with: eps, min_samples
+    dbscan = DBSCAN(eps=eps, min_samples=np.round(len(df)*percent_data))
     dbscan.fit(arrivals.reshape(-1,1))
     
     clusters = np.unique(dbscan.labels_)
     if -1 in clusters:
         clusters = clusters[1:]
+    # This part assumes there are only 2 labels, one for each global discontinuity
+    # May have to modify clustering part in case less than or more than 2 appear?
+    # Purpose is to find corresponding label for each discontinuity
     avg_preds = np.asarray([arrivals[dbscan.labels_ == c].mean() for c in clusters])
     sort_ind = np.argsort(avg_preds)
     cluster660, cluster410 = clusters[sort_ind]
     
+    # Reshape into shape of arrivals, to see label for each predicted arrival
+    # of each bin
     labels = dbscan.labels_.reshape(len(df), len(pred_inds))
     
     ind410 = np.zeros(len(df), dtype=np.int)
     ind660 = np.zeros(len(df), dtype=np.int)
-    '''
-    Need to implement removal of predictions that did not find either discontinuity
-    '''
+    
     for i in range(len(labels)):
         l, counts = np.unique(labels[i], return_counts=True)
+        # If either discontinuity isn't found, label to trash later
+        if (0 not in l) or (1 not in l):
+            labels[i] = -np.ones(len(labels[i]))
+            ind410[i] = -1
+            ind660[i] = -1
+            continue
         for c in clusters:
             if counts[l==c][0] > 1:
                 where = np.argwhere(labels[i]==c).flatten()
                 maxqual = np.argmax(qualities[i][where])
                 throw = [j for j in range(len(where)) if j != maxqual]
-                labels[i][where[throw]] = -1 # problem
+                labels[i][where[throw]] = -1
         ind410[i] = np.where(labels[i]==cluster410)[0][0]
         ind660[i] = np.where(labels[i]==cluster660)[0][0]
         
     arrivals = arrivals.reshape(len(df), len(pred_inds))
     
-    df_inds = range(len(df))
-    preds410, preds660 = arrivals[df_inds,ind410], arrivals[df_inds,ind660]
-    errs410, errs660 = errors[df_inds,ind410], errors[df_inds,ind660]
-    amps410, amps660 = amps[df_inds,ind410], amps[df_inds,ind660]
-    quals410,quals660 = qualities[df_inds,ind410], qualities[df_inds,ind660]
+    found410 = np.where(ind410 != -1)[0]
+    found660 = np.where(ind660 != -1)[0]
+    foundboth = np.union1d(found410, found660)
+    ind410 = ind410[foundboth]
+    ind660 = ind660[foundboth]
     
-    df_disc = pd.DataFrame(data = {'file':df['file'].values,
+    preds410, preds660 = arrivals[foundboth,ind410], arrivals[foundboth,ind660]
+    errs410, errs660 = errors[foundboth,ind410], errors[foundboth,ind660]
+    amps410, amps660 = amps[foundboth,ind410], amps[foundboth,ind660]
+    quals410,quals660 = qualities[foundboth,ind410], qualities[foundboth,ind660]
+    
+    df_disc = pd.DataFrame(data = {'file':df['file'].values[foundboth],
                                   '410pred':preds410, '410err':errs410, '410amp':amps410, '410qual':quals410,
                                   '660pred':preds660, '660err':errs660, '660amp':amps660, '660qual':quals660})
     return df_disc

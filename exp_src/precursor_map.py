@@ -63,7 +63,7 @@ def get_Lauren_Pred_Bootstraps(cap, precursor):
     return dat_bins, dat_times, dat_errors
 
 def get_Model_Pred(cap, precursor):
-    file_path = 'cross_secs_dat/model_pred/' + cap + 'caps_wig_preds.csv'
+    file_path = 'cross_secs_dat/model_pred/' + cap + 'caps_wig_results.csv'
     df = pd.read_csv(file_path)
     df = df.loc[:, ['file', precursor+'pred', precursor+'err', precursor+'amp', precursor+'qual']]
     
@@ -125,7 +125,6 @@ TEMPORARY. REMOVE WHEN LAUREN FIXES. Only needed for the first pred, not bootstr
 #lauren_times = lauren_times-4.2
 
 
-
 model_bins, model_times, model_errors = get_Model_Pred(cap, discontinuity)
 model_latlon = cap2latlon(model_bins)
 
@@ -144,8 +143,8 @@ Find solution to this...
 
 
 
-model_times = np.ones(len(model_times)) * 0
-lauren_times = np.ones(len(lauren_times)) * 0
+#model_times = np.ones(len(model_times)) * 0
+#lauren_times = np.ones(len(lauren_times)) * 0
 
 
 

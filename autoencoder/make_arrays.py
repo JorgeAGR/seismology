@@ -40,7 +40,7 @@ data_points = 5000
 # max noise lauren accepts
 max_noise = 1/3
 # sigmas to consider for noise level
-noise_sigmas = 2
+noise_sigmas = 3
 noise_std = max_noise / noise_sigmas
 
 train_seismos = sac2npy(train_dir, train_files)
@@ -55,5 +55,5 @@ test_seismos = test_seismos + test_noise
 train_seismos = train_seismos.reshape(train_seismos.shape[0], train_seismos.shape[1], 1)
 test_seismos = test_seismos.reshape(test_seismos.shape[0], test_seismos.shape[1], 1)
 
-np.save('data/train/train_seismos_noise_2sigma', train_seismos)
-np.save('data/test/test_seismos_noise_2sigma', test_seismos)
+np.save('data/train/train_seismos_noise_' + str(noise_sigmas) + 'sigma', train_seismos)
+np.save('data/test/test_seismos_noise_' + str(noise_sigmas) + 'sigma', test_seismos)

@@ -62,7 +62,7 @@ axrelu.set_ylim(-0.1, 2)
 axrelu.set_xlabel('x')
 axrelu.set_ylabel('y')
 figrelu.tight_layout()
-plt.savefig('../figs/4cs/relu.png', dpi=250)
+#plt.savefig('../figs/4cs/relu.png', dpi=250)
 plt.close()
 
 #num = np.random.randint(0, len(seis_files))
@@ -80,7 +80,7 @@ for i in range(2):
     ax1.set_xlabel('Time [s]')
     ax1.set_ylabel('Amplitude')
     fig1.tight_layout()
-    plt.savefig('../figs/4cs/seismogram_eg_' + str(i) + '.png', dpi=250)
+    #plt.savefig('../figs/4cs/seismogram_eg_' + str(i) + '.png', dpi=250)
     plt.close()
     
 figbad, axbad = plt.subplots()
@@ -95,7 +95,7 @@ axbad.yaxis.set_minor_locator(mtick.MultipleLocator(0.1))
 axbad.set_xlabel('Time [s]')
 axbad.set_ylabel('Amplitude')
 figbad.tight_layout()
-plt.savefig('../figs/4cs/seismogram_bad_eg_' + str(i) + '.png', dpi=250)
+#plt.savefig('../figs/4cs/seismogram_bad_eg_' + str(i) + '.png', dpi=250)
 plt.close()
 
 np.random.seed(seed=0)
@@ -118,7 +118,7 @@ ax.yaxis.set_major_locator(plt.NullLocator())
 ax.set_xlabel('Time [s]')
 fig2.tight_layout(h_pad=0)
 fig2.subplots_adjust(wspace=0, hspace=0)
-plt.savefig('../figs/4cs/seismograms.png', dpi=250)
+#plt.savefig('../figs/4cs/seismograms.png', dpi=250)
 plt.close()
 
 fig3, ax3 = plt.subplots(figsize=(15,5))
@@ -137,7 +137,7 @@ ax3.yaxis.set_major_locator(plt.NullLocator())
 ax3.set_xlabel('Time [s]')
 ax3.legend(loc='upper left')
 fig3.tight_layout(h_pad=0, w_pad=0)
-plt.savefig('../figs/4cs/seismogram_window.png', dpi=250)
+#plt.savefig('../figs/4cs/seismogram_window.png', dpi=250)
 plt.close()
 
 rand_shifts = [0, -3.3, -2.5, -1.2, 3, 4.6]
@@ -166,7 +166,7 @@ for i, ax in enumerate(axrand):
     ax.yaxis.set_major_locator(plt.NullLocator())
 figrand.tight_layout()
 figrand.subplots_adjust(wspace=0, hspace=0)
-plt.savefig('../figs/4cs/windows_shifted.png', dpi=250)
+#plt.savefig('../figs/4cs/windows_shifted.png', dpi=250)
 plt.close()
 
 model_windows = [20, 25, 30, 40, 50]
@@ -204,7 +204,7 @@ axloss.set_xlabel('Window Size [s]')
 axloss.set_ylabel('Minimum Loss')
 axloss.legend()
 figloss.tight_layout(h_pad=0, w_pad=0)
-plt.savefig('../figs/4cs/min_loss.png', dpi=250)
+#plt.savefig('../figs/4cs/min_loss.png', dpi=250)
 plt.close()
 
 windows = [20, 40]
@@ -223,5 +223,35 @@ for i, ax in enumerate(axwin):
     ax.set_ylim(-1.1, 1.1)
 figwin.tight_layout()
 figwin.subplots_adjust(wspace=0, hspace=0.8)
-plt.savefig('../figs/4cs/window_grid.png', dpi=250)
+#plt.savefig('../figs/4cs/window_grid.png', dpi=250)
 plt.close()
+
+train_log = np.load('../auto_seismo/models/etc/arrival_SS_pos_model_0040_training_logs.npz')
+loss = train_log['loss'].mean(axis=0)
+loss_err = train_log['loss'].std(axis=0)
+val_loss = train_log['val_loss'].mean(axis=0)
+val_loss_err = train_log['val_loss'].std(axis=0)
+best_model = train_log['best_model']
+epoch_grid = np.arange(0, loss.shape[0]) + 1
+figepochs, axepochs = plt.subplots()
+'''
+axepochs.plot(epoch_grid, loss, color='blue')
+axepochs.fill_between(epoch_grid, loss - loss_err, loss + loss_err, color='cornflowerblue')
+axepochs.plot(epoch_grid, val_loss, '--', color='red')
+axepochs.fill_between(epoch_grid, val_loss - val_loss_err, val_loss + val_loss_err, color='lightcoral')
+'''
+axepochs.errorbar(epoch_grid, loss, yerr=loss_err,
+                  linestyle='-', color='blue', capsize=5, label='Training')
+axepochs.errorbar(epoch_grid, val_loss, yerr=val_loss_err,
+                  linestyle='--', color='red', capsize=5, label='Testing')
+axepochs.set_xlabel('Epoch')
+axepochs.set_ylabel('Loss')
+axepochs.xaxis.set_major_locator(mtick.MultipleLocator(10))
+axepochs.xaxis.set_minor_locator(mtick.MultipleLocator(1))
+axepochs.yaxis.set_major_locator(mtick.MultipleLocator(0.1))
+axepochs.yaxis.set_minor_locator(mtick.MultipleLocator(0.02))
+axepochs.set_xlim(0, 41)
+axepochs.set_ylim(0, 0.3)
+axepochs.legend()
+figepochs.tight_layout(pad=0.5)
+figepochs.savefig('../figs/loss_training_40s.png', dpi=250)
