@@ -21,7 +21,7 @@ time_window = 40
 relevant_preds = 5
 
 cap_size = 15
-file_dir = '../../seismograms/cross_secs/' + str(cap_size) + 'caps_wig/'
+file_dir = '../../seismograms/cross_secs/' + str(cap_size) + 'caps_deg/'
 
 def cut_Window(cross_sec, times, t_i, t_f):
     init = np.where(times == np.round(t_i, 1))[0][0]
