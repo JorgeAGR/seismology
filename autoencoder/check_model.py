@@ -161,18 +161,23 @@ Project done! Kinda. Have to play with denoising now.
 #autoencoder, encoder, decoder = RossNet_CAE(x_train.shape[1], 32)
 # Activation function of output has to be changed for [0,1] data
 #autoencoder.load_weights('rossnet_convautoencoder_nodense_-11data_mse_weights')
-
-autoencoder = load_model('models/rossnet_convautoencoder_denoiser_2sigma_mae_linear.h5')
+denoise = False
+autoencoder = load_model('models/cae_denoiser_2sigma_mae_transfer_linear.h5')
 
 # Predict for an instance and plot the actual and reconstructed for comparison
 times = np.arange(0, 500, 0.1)
-index = np.random.randint(0, len(x_test))
-eg_rec = autoencoder.predict(x_test[index].reshape(1, x_test.shape[1], 1)).flatten()
-snr = np.sqrt(x_test[index].mean()**2)
+index = 0#np.random.randint(0, len(x_test))
 fig, ax = plt.subplots(nrows=2, sharex=True)
-ax[0].plot(times, x_test[index], color='lightgray', label='Noisy')
-ax[0].plot(times, y_test[index], label='Actual')
-ax[0].plot(times, eg_rec, label='Denoised')
+if denoise:
+    eg_rec = autoencoder.predict(x_test[index].reshape(1, x_test.shape[1], 1)).flatten()
+    snr = np.sqrt(x_test[index].mean()**2)
+    ax[0].plot(times, x_test[index], color='lightgray', label='Noisy')
+    ax[0].plot(times, y_test[index], label='Actual')
+    ax[0].plot(times, eg_rec, label='Denoised')
+else:
+    eg_rec = autoencoder.predict(y_test[index].reshape(1, y_test.shape[1], 1)).flatten()
+    ax[0].plot(times, y_test[index], label='Actual')
+    ax[0].plot(times, eg_rec, label='Decompressed')
 ax[0].set_ylim(-1,1)
 ax[0].set_xlim(0, 500)
 ax[0].legend()

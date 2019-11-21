@@ -118,7 +118,7 @@ def find_Precursors(file_dir, cs_file, model, relevant_preds=2):
     result_strings = [make_string(i) for i in range(relevant_preds)]
     return result_strings
 
-def find_410_660(pred_csv_path, eps=5, percent_data=0.9):
+def find_410_660(pred_csv_path, eps=5, percent_data=0.99):
     df = pd.read_csv(pred_csv_path)
     pred_inds = np.asarray([1, 5, 9, 13, 17])
     err_inds = pred_inds + 1
