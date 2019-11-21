@@ -51,9 +51,6 @@ window_preds = np.zeros(len(time_i_grid))
 #window_shifted = np.zeros(len(time_i_grid))
 print('Predicting...', end=' ')
 for i, t_i, t_f in zip(range(len(time_i_grid)), time_i_grid, time_f_grid):
-    if t_f > shift:
-        break
-    print(t_i)
     s_window = cut_Window(seis, times, t_i, t_f)
     s_window = s_window / np.abs(s_window).max()
     # Take the absolute value of the prediction to remove any wonky behavior in finding the max
