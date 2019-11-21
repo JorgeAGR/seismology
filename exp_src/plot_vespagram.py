@@ -27,7 +27,8 @@ mpl.rcParams['ytick.major.size'] = 12
 mpl.rcParams['ytick.minor.size'] = 8
 mpl.rcParams['ytick.labelsize'] = 14
 
-file_path = '../autoencoder/original_vespa.txt'
+vespa = '16x'
+file_path = '../autoencoder/' + vespa + '_vespa.txt'
 #levels = np.asarray([-6000, -4500, -3000, -1500, 0, 1500, 3000, 4500, 6000])
 # Found levels from plotting original first (contour = ax.contourf(..))
 # and getting the proper attribute (contour.levels), use this throughout
@@ -71,3 +72,4 @@ ax.xaxis.set_minor_locator(mtick.MultipleLocator(25))
 ax.yaxis.set_major_locator(mtick.MultipleLocator(0.2))
 ax.yaxis.set_minor_locator(mtick.MultipleLocator(0.1))
 fig.tight_layout(pad=0.5)
+fig.savefig('../figs/' + file_path.split('/')[-1].rstrip('.txt') + '.svg', dpi=500)
