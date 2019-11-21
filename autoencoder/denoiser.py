@@ -7,29 +7,9 @@ Created on Thu Nov 14 14:40:30 2019
 """
 import os
 import numpy as np
-import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
-from keras.layers import Input, Dense, Conv1D, MaxPooling1D, UpSampling1D, BatchNormalization, Reshape, Flatten
-from keras.models import Model, load_model
-from keras.optimizers import Adam
-import matplotlib as mpl
+from keras.models import load_model
 from obspy import read as obspyread
-
-# Settings for plots
-golden_ratio = (np.sqrt(5) + 1) / 2
-width = 12
-height = width / golden_ratio
-
-mpl.rcParams['figure.figsize'] = (width, height)
-mpl.rcParams['font.size'] = 14
-mpl.rcParams['figure.titlesize'] = 'large'
-mpl.rcParams['legend.fontsize'] = 'small'
-mpl.rcParams['xtick.major.size'] = 12
-mpl.rcParams['xtick.minor.size'] = 8
-mpl.rcParams['xtick.labelsize'] = 14
-mpl.rcParams['ytick.major.size'] = 12
-mpl.rcParams['ytick.minor.size'] = 8
-mpl.rcParams['ytick.labelsize'] = 14
 
 def rescale(data, scaling=(0,1)):
     scaler = MinMaxScaler(feature_range=scaling)
@@ -54,10 +34,10 @@ def denoise(datadir, npydir, model):
         seis[0].stats.sac.b += 0.1
         seis.write(denoise_dir+files[i].rstrip('.s_fil') + '.sac')
     
-autoencoder = load_model('models/rossnet_convautoencoder_denoiser_2sigma_mae_linear.h5')
+autoencoder = load_model('models/cae_denoiser_2sigma_mae_transfer_linear.h5')
 
-datadirs = ['../../seismograms/SS_kept/', '../../seismograms/SS_kept_test/']
-npydirs = ['data/train/train_seismos_noise_2sigma.npy', 'data/test/test_seismos_noise_2sigma.npy']
+datadirs = ['../../seismograms/SS_kept_test/',]
+npydirs = ['data/test/test_seismos_noise_2sigma.npy', ]
 
 for d, n in zip(datadirs, npydirs):
     denoise(d, n, autoencoder)
