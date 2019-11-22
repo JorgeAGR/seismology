@@ -20,11 +20,11 @@ mpl.rcParams['figure.figsize'] = (width, height)
 mpl.rcParams['font.size'] = 14
 mpl.rcParams['figure.titlesize'] = 'large'
 mpl.rcParams['legend.fontsize'] = 'small'
-mpl.rcParams['xtick.major.size'] = 12
-mpl.rcParams['xtick.minor.size'] = 8
+mpl.rcParams['xtick.major.size'] = 8
+mpl.rcParams['xtick.minor.size'] = 4
 mpl.rcParams['xtick.labelsize'] = 14
-mpl.rcParams['ytick.major.size'] = 12
-mpl.rcParams['ytick.minor.size'] = 8
+mpl.rcParams['ytick.major.size'] = 8
+mpl.rcParams['ytick.minor.size'] = 4
 mpl.rcParams['ytick.labelsize'] = 14
 
 vespa = 'original'
@@ -59,7 +59,7 @@ limit = 400
 levels = np.arange(-limit, limit+step, step)
 cmap = plt.get_cmap('seismic')
 fig, ax = plt.subplots()
-ax.set_title(file_path.split('/')[-1].rstrip('.txt'))
+#ax.set_title(file_path.split('/')[-1].rstrip('.txt'))
 contour = ax.contourf(time, slowness, amplitude, levels, cmap=cmap, extend='both')
 contour.cmap.set_under('k')
 ax.invert_yaxis()
@@ -70,4 +70,4 @@ ax.xaxis.set_minor_locator(mtick.MultipleLocator(25))
 ax.yaxis.set_major_locator(mtick.MultipleLocator(0.2))
 ax.yaxis.set_minor_locator(mtick.MultipleLocator(0.1))
 fig.tight_layout(pad=0.5)
-fig.savefig('../figs/' + file_path.split('/')[-1].rstrip('.txt') + '.svg', dpi=500)
+fig.savefig('../figs/' + file_path.split('/')[-1].rstrip('.txt') + '.eps', dpi=500)
