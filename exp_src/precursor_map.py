@@ -32,8 +32,8 @@ mpl.rcParams['ytick.minor.size'] = 8
 mpl.rcParams['ytick.labelsize'] = 14
 
 # Safegaurd when running on IDE
-discontinuity = '410'
-cap = '5'
+discontinuity = '660'#'410'
+cap = '7.5'
 
 parser = argparse.ArgumentParser(description='Model vs Lauren Discontinuity Map')
 parser.add_argument('cap_size', metavar='Cap Size', type=str, default=cap)
@@ -132,35 +132,8 @@ def get_MinMax_Times(l_times, m_times):
 lauren_bins, lauren_times, lauren_errors = get_Lauren_Pred(cap, discontinuity)
 lauren_latlon = cap2latlon(lauren_bins)
 
-'''
-TEMPORARY. REMOVE WHEN LAUREN FIXES. Only needed for the first pred, not bootstraps
-'''
-#lauren_times = lauren_times-4.2
-
-
 model_bins, model_times, model_errors = get_Model_Pred(cap, discontinuity)
 model_latlon = cap2latlon(model_bins)
-
-'''
-TEMPORARY. Figure how to deal with this?? 
-Finding extra stuff ruins the file. It will find, say, something before the 410 and the 410.
-But since only keep the 2 strongest predictions, 660 may be strong enough but gets thrown away!
-Find solution to this...
-'''
-#less = np.where(-165 < model_times)
-#greater = np.where(model_times < -145)
-#inds = np.intersect1d(less, greater)
-
-#model_latlon = model_latlon[inds]
-#model_times = model_times[inds]
-
-
-
-#model_times = np.ones(len(model_times)) * 0
-#lauren_times = np.ones(len(lauren_times)) * 0
-
-
-
 
 fig = plt.figure()
 rows = 13
@@ -192,7 +165,8 @@ for l, lon_0 in enumerate([-180, 0]):
     globe_m.drawmeridians(np.arange(0.,360.,45.))
     #globe.fillcontinents(color='black')
     #globe.scatter(lauren_latlon[85:,0], lauren_latlon[85:,1], color='red', s=10, latlon=True)
-    globe_m.scatter(model_latlon[:,1], model_latlon[:,0], c=model_times, s=50, latlon=True, cmap=cmap, norm=norm, zorder=10)
+    globe_m.scatter(model_latlon[:,1], model_latlon[:,0], c=model_times, s=50,
+                    latlon=True, cmap=cmap, norm=norm, zorder=10)
     
     globe_l = Basemap(projection='moll', lon_0=lon_0, resolution='c', ax=ax[2][l])
     globe_l.drawmapboundary(fill_color='lightgray')
@@ -201,21 +175,53 @@ for l, lon_0 in enumerate([-180, 0]):
     globe_l.drawmeridians(np.arange(0.,360.,45.))
     #globe.fillcontinents(color='black')
     #globe.scatter(lauren_latlon[85:,0], lauren_latlon[85:,1], color='red', s=10, latlon=True)
-    globe_l.scatter(lauren_latlon[:,1], lauren_latlon[:,0], c=lauren_times, s=50, latlon=True, cmap=cmap, norm=norm, zorder=10)
+    globe_l.scatter(lauren_latlon[:,1], lauren_latlon[:,0], c=lauren_times, s=50,
+                    latlon=True, cmap=cmap, norm=norm, zorder=10)
     #plt.show()
 fig.tight_layout(pad=0.5)
-plt.show()
-'''
+
 # figs showing time diffs
-fig2, ax2 = plt.subplots()
+both_bins = np.intersect1d(lauren_bins, model_bins)
+find_match = lambda bins_arr: np.asarray([i for i in range(len(bins_arr)) if bins_arr[i] in both_bins])
+model_inds = find_match(model_bins)
+lauren_inds = find_match(lauren_bins)
+
+diff_times = np.abs(model_times[model_inds] - lauren_times[lauren_inds])
+disagree = diff_times > lauren_errors[lauren_inds]
+
+#print(diff_times[disagree])
+#print(model_bins[model_inds][disagree][np.argmax(diff_times[disagree])])
+#print('model', model_times[model_inds][disagree][np.argmax(diff_times[disagree])])
+#print('lauren', lauren_times[lauren_inds][disagree][np.argmax(diff_times[disagree])],
+#      '+/-', lauren_errors[lauren_inds][np.argmax(diff_times[disagree])])
+#fig2, ax2 = plt.subplots(nrows=2)
+
+rows2 = 16
+cols2 = rows2 + 1
+fig2 = plt.figure()
+ax2 = [plt.subplot2grid((rows2,cols2), (0,0), colspan=rows2, rowspan=rows2//2, fig=fig2),
+      plt.subplot2grid((rows2,cols2), (rows2//2,0), colspan=rows2, rowspan=rows2//2, fig=fig2),
+      plt.subplot2grid((rows2,cols2), (0,rows2), colspan=1, rowspan=rows2, fig=fig2)]
+fig.text(0.46, 0.925, 'Model Map', fontweight='bold')
+fig.text(0.45, 0.375, 'Bootstrap Map', fontweight='bold')
+fig.text(0.475, 0.525, 'S'+discontinuity+'S', fontweight='bold')
+
+min_time2, max_time2 = get_MinMax_Times(diff_times, diff_times)
+norm2 = mpl.colors.Normalize(vmin=min_time2, vmax=max_time2)
+cbar2 = mpl.colorbar.ColorbarBase(ax2[2], cmap=cmap, norm=norm2, orientation='vertical')
+cbar2.ax.tick_params(length=5)
+cbar2.set_ticks(mtick.MultipleLocator(0.5))
+cbar2.minorticks_on()
+cbar2.set_label('Absolute Error [s]')
 for l, lon_0 in enumerate([0, 180]):
-    diff_times = model_times - lauren_times
-    globe_diff = Basemap(projection='moll', lon_0=lon_0, resolution='c', ax=ax2)
+    globe_diff = Basemap(projection='moll', lon_0=lon_0, resolution='c', ax=ax2[l])
     globe_diff.drawmapboundary(fill_color='lightgray')
     globe_diff.drawcoastlines(color='gray')
     globe_diff.drawparallels([-45, 0, 45])
     globe_diff.drawmeridians(np.arange(0.,360.,45.))
     #globe.fillcontinents(color='black')
     #globe.scatter(lauren_latlon[85:,0], lauren_latlon[85:,1], color='red', s=10, latlon=True)
-    globe_diff.scatter(model_latlon[:,1], model_latlon[:,0], c=diff_times, s=50, latlon=True, cmap='YlGnBu', zorder=10)
-'''
+    globe_diff.scatter(model_latlon[:,1][disagree], model_latlon[:,0][disagree],
+                       c=diff_times[disagree], s=50, latlon=True, cmap='YlGnBu', zorder=10)
+fig2.tight_layout(pad=0.5)
+plt.show()

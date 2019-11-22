@@ -27,7 +27,7 @@ mpl.rcParams['ytick.major.size'] = 12
 mpl.rcParams['ytick.minor.size'] = 8
 mpl.rcParams['ytick.labelsize'] = 14
 
-vespa = '16x'
+vespa = 'original'
 file_path = '../autoencoder/' + vespa + '_vespa.txt'
 #levels = np.asarray([-6000, -4500, -3000, -1500, 0, 1500, 3000, 4500, 6000])
 # Found levels from plotting original first (contour = ax.contourf(..))
@@ -49,8 +49,6 @@ amplitude = vespa_data[:,2]
 _, unique_vals_counts = np.unique(slowness, return_counts=True)
 x_dim = len(unique_vals_counts)
 y_dim = unique_vals_counts[0]
-
-#time = time[:x_dim]
 
 time = time.reshape(x_dim, y_dim)
 slowness = slowness.reshape(x_dim, y_dim)

@@ -33,7 +33,7 @@ mpl.rcParams['ytick.major.size'] = 12
 mpl.rcParams['ytick.minor.size'] = 8
 mpl.rcParams['ytick.labelsize'] = 14
 
-df = pd.read_csv('cross_secs_dat/model_pred/5caps_wig_preds.csv')
+df = pd.read_csv('cross_secs_dat/model_pred/5caps_deg_preds.csv')
 pred_inds = np.asarray([1, 5, 9, 13, 17])
 err_inds = pred_inds + 1
 amp_inds = err_inds + 1
@@ -44,8 +44,8 @@ errors = df.values[:,err_inds]
 amps = df.values[:,amp_inds]
 qualities = df.values[:,qual_inds]
 
-eps = 5
-percent = 0.95
+eps = 4
+percent = 0.99
 dbscan = DBSCAN(eps=eps, min_samples=np.round(len(df)*percent))
 dbscan.fit(arrivals.reshape(-1,1))
 
@@ -56,7 +56,7 @@ sigma = 2
 This is to visualize a statistical interpretation of how the predictions will
 be clustered together. Assuming normally distributed clusters of predictions,
 eps can be considered the number of standard deviations that correspond to
-percent. So that for 95% of the data, eps is 2sigma. So given eps = 3 and 
+percent. So that for 95% of the data, eps is 2sigma. So given eps = 5 and 
 percent = 0.95, this can be translated as saying that for a data point to be 
 considered a core point (a mean point, say), then at least 95% of the predictions
 should be within 2sigma (2sigma = 3 units away from it).
