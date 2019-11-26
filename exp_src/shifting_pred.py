@@ -59,13 +59,13 @@ for i, file in enumerate(files):
     actuals[i] = seis.stats.sac.t6 - seis.stats.sac.b
 
 shift_error = preds - actuals
-print('avg err:', shift_error.mean(), '+/-', shift_error.std())
+print('avg err:', (shift_error).mean(), '+/-', (shift_error).std())
 print('min error:', np.abs(shift_error).min())
 print('max error:', np.abs(shift_error).max())
 #print(len(np.where(shift_error<0)[0])/len(shift_error))
 fig, ax = plt.subplots()
 weights = np.ones_like(shift_error)/len(shift_error)
-shift_hist = ax.hist(shift_error, np.arange(-0.5, 0.5, 0.02), histtype='step', align='mid', 
+shift_hist = ax.hist(shift_error, np.arange(-0.5, 0.5, 0.05), histtype='step', align='mid', 
         color='black', linewidth=2, weights=weights, cumulative=False,)# label='Shifted Windows')
 #simple_hist = ax.hist(simple_error, np.arange(-1, 1, 0.1), histtype='step', align='mid',
 #               color='green', linewidth=2, weights=weights, cumulative=False, label='Single Window')
@@ -73,8 +73,8 @@ ax.set_xlim(-0.5, 0.5)
 ax.set_ylim(0, 0.2)
 ax.xaxis.set_major_locator(mtick.MultipleLocator(0.1))
 ax.yaxis.set_major_locator(mtick.MultipleLocator(0.1))
-ax.xaxis.set_minor_locator(mtick.MultipleLocator(0.02))
-ax.yaxis.set_minor_locator(mtick.MultipleLocator(0.02))
+ax.xaxis.set_minor_locator(mtick.MultipleLocator(0.05))
+ax.yaxis.set_minor_locator(mtick.MultipleLocator(0.05))
 ax.set_xlabel(r'$t_{pred} - t_{actual}$ [s]')
 ax.set_ylabel('Fraction of seismograms')
 #ax.legend()
