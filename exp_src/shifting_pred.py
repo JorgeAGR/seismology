@@ -70,7 +70,7 @@ shift_hist = ax.hist(shift_error, np.arange(-0.5, 0.5, 0.05), histtype='step', a
 #simple_hist = ax.hist(simple_error, np.arange(-1, 1, 0.1), histtype='step', align='mid',
 #               color='green', linewidth=2, weights=weights, cumulative=False, label='Single Window')
 ax.set_xlim(-0.5, 0.5)
-ax.set_ylim(0, 0.5)
+ax.set_ylim(0, 0.35)
 ax.xaxis.set_major_locator(mtick.MultipleLocator(0.1))
 ax.yaxis.set_major_locator(mtick.MultipleLocator(0.1))
 ax.xaxis.set_minor_locator(mtick.MultipleLocator(0.05))
