@@ -59,7 +59,7 @@ for i, file in enumerate(files):
     actuals[i] = seis.stats.sac.t6 - seis.stats.sac.b
 
 shift_error = preds - actuals
-print('avg err:', (shift_error).mean(), '+/-', (shift_error).std())
+print('avg abs err:', np.abs(shift_error).mean(), '+/-', np.abs(shift_error).std())
 print('min error:', np.abs(shift_error).min())
 print('max error:', np.abs(shift_error).max())
 #print(len(np.where(shift_error<0)[0])/len(shift_error))

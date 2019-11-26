@@ -194,3 +194,38 @@ ax.set_ylabel('Amplitude')
 ax.xaxis.set_minor_locator(mtick.MultipleLocator(10))
 ax.legend(loc='upper right')
 fig.tight_layout()
+
+fig, ax = plt.subplots(nrows=2, sharex=True)
+#axes = [plt.subplot2grid((rows2,cols2), (0,0), colspan=rows2, rowspan=rows2//2, fig=fig2),
+#        plt.subplot2grid((rows2,cols2), (rows2//2,0), colspan=rows2, rowspan=rows2//2, fig=fig2)]
+cs_norm = cs.data / np.abs(cs.data).max()
+#fig, ax = plt.subplots()
+ax[0].plot(times, cs_norm, color='black')
+for i, ar in enumerate(arrivals_pos[np.argsort(counts_pos)][-2:]):
+    ax[0].axvline(ar-shift, color='blue', linestyle='--')
+    ax[0].text(ar-5-shift, 0.2, np.sort(counts_pos)[-2:][i], rotation=90, fontsize=16)
+ax[0].axvline(ar-shift, color='blue', linestyle='--', label='model')
+#for i, ar in enumerate(arrivals_neg[np.argsort(counts_neg)][-5:]):
+#   ax.axvline(ar, color='red', linestyle='--')
+#   ax.text(ar-5, 0.1, np.sort(counts_neg)[-5:][i], rotation=90, fontsize=16)
+#ax.axvline(ar, color='red', linestyle='--', label='negative model')
+ax[0].set_ylim(-1, 1)
+ax[0].set_xlim(times.min(), times.max())
+ax[1].set_xlabel('Time [s]')
+ax[0].xaxis.set_major_locator(plt.NullLocator())
+ax[0].set_ylabel('Amplitude')
+#ax.set_title('5caps_wig/0.087_3.96')
+#ax[0].xaxis.set_minor_locator(mtick.MultipleLocator(10))
+#ax[0].legend(loc='upper right')
+
+#fighist, axhist = plt.subplots()
+ax[1].hist(window_preds-shift, np.arange(begin_time, end_time+0.1, 0.1)-shift, color='black')
+for i, cluster in enumerate(clusters[np.argsort(counts_pos)][-2:]):
+    ax[1].hist((window_preds-shift)[dbscan.labels_ == cluster], np.arange(begin_time, end_time+0.1, 0.1)-shift, color='red')
+ax[1].set_ylabel('Prediction Frequency')
+ax[1].xaxis.set_major_locator(mtick.MultipleLocator(50))
+ax[1].xaxis.set_minor_locator(mtick.MultipleLocator(25))
+fig.tight_layout(pad=1)
+fig.subplots_adjust(wspace=0, hspace=0.1)
+fig.savefig('../figs/cross_sec_pred.png', dpi=250)
+fig.savefig('../figs/cross_sec_pred.svg', dpi=250)
