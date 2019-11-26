@@ -60,7 +60,9 @@ for i, file in enumerate(files):
 
 shift_error = preds - actuals
 print('avg err:', shift_error.mean(), '+/-', shift_error.std())
-print(len(np.where(shift_error<0)[0])/len(shift_error))
+print('min error:', np.abs(shift_error).min())
+print('max error:', np.abs(shift_error).max())
+#print(len(np.where(shift_error<0)[0])/len(shift_error))
 fig, ax = plt.subplots()
 weights = np.ones_like(shift_error)/len(shift_error)
 shift_hist = ax.hist(shift_error, np.arange(-0.5, 0.5, 0.02), histtype='step', align='mid', 
@@ -78,6 +80,7 @@ ax.set_ylabel('Fraction of seismograms')
 #ax.legend()
 fig.tight_layout(pad=0.5)
 fig.savefig('../figs/shift_v_simple_hist.png', dpi=250)
+fig.savefig('../figs/shift_v_simple_hist.svg', dpi=250)
 
 fig2, ax2 = plt.subplots()
 shift_cum = ax2.hist(np.abs(shift_error), np.arange(0, 1.1, 0.001), histtype='step', align='mid', 
@@ -96,3 +99,4 @@ ax2.set_ylabel('Fraction of counts')
 #ax2.legend(loc='lower right')
 fig2.tight_layout(pad=0.5)
 fig2.savefig('../figs/shift_v_simple_cumhist.png', dpi=250)
+fig2.savefig('../figs/shift_v_simple_cumhist.svg', dpi=250)
