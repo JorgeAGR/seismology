@@ -60,7 +60,7 @@ def shift_Max(seis, pred_var):
     return arrival
 
 keras.losses.huber_loss = huber_loss
-pos_model = load_model('../auto_seismo/models/arrival_SS_pos_model_0040.h5')
+pos_model = load_model('../auto_seismo/models/arrival_PP_pos_model_0040.h5')
 neg_model = load_model('../auto_seismo/models/arrival_SS_neg_model_0040.h5')
 time_window = 40
 
@@ -73,16 +73,18 @@ time_window = 40
 #cs = obspy.read('../../seismograms/cross_secs/5caps_wig/0.087_0.54.sac')
 #cs = obspy.read('../../seismograms/cross_secs/5caps_wig/0.087_2.70.sac')
 
-cap = '5'
-file = 'n1.046_0.26'
-cs = obspy.read('../../seismograms/cross_secs/'+cap+'caps_wig/'+file+'.sac')
+cap = '15'
+file = 'n15_156.50'#'n45_232.87'
+cs = obspy.read('../../seismograms/cross_secs_PP/'+cap+'caps_deg_wig/'+file+'.sac')
 
 cs = cs[0].resample(10)
 times = cs.times()
 
 shift = -cs.stats.sac.b
-begin_time = 80 # will be user input
-end_time = 260 # ditto
+begin_time = -np.abs(-190) # Seconds before main arrival. Will become an input.
+begin_time = np.round(begin_time + shift, decimals=1)
+end_time = 40#-np.abs(-10) # ditto above
+end_time = np.round(end_time + shift, decimals=1)
 
 time_i_grid = np.arange(begin_time, end_time - time_window + 0.1, 0.1)
 time_f_grid = np.arange(begin_time + time_window, end_time + 0.1, 0.1)
@@ -91,14 +93,14 @@ window_preds = np.zeros(len(time_i_grid))
 window_shifted = np.zeros(len(time_i_grid))
 for i, t_i, t_f in zip(range(len(time_i_grid)), time_i_grid, time_f_grid):
     if t_f > shift:
-        break
+        pass#break
     cs_window = cut_Window(cs, times, t_i, t_f)
     cs_window = cs_window / np.abs(cs_window).max()
     # Take the absolute value of the prediction to remove any wonky behavior in finding the max
     # Doesn't matter since they are bad predictions anyways
     cs.stats.sac.t6 = np.abs(pos_model.predict(cs_window.reshape(1, len(cs_window), 1))[0][0]) + t_i
     window_preds[i] += cs.stats.sac.t6#shift_Max(cs, 't6')
-    window_shifted[i] += shift_Max(cs, 't6')
+    #window_shifted[i] += shift_Max(cs, 't6')
     #break
 '''
 window_negs = np.zeros(len(time_i_grid))
@@ -176,7 +178,7 @@ ax.grid()
 cs_norm = cs.data / np.abs(cs.data).max()
 fig, ax = plt.subplots()
 ax.plot(times, cs_norm, color='black')
-for i, ar in enumerate(arrivals_pos[np.argsort(counts_pos)][-2:]):
+for i, ar in enumerate(arrivals_pos[np.argsort(counts_pos)][-3:]):
     ax.axvline(ar-shift, color='blue', linestyle='--')
     ax.text(ar-5-shift, 0.1, np.sort(counts_pos)[-2:][i], rotation=90, fontsize=16)
 ax.axvline(ar-shift, color='blue', linestyle='--', label='positive model')

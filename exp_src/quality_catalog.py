@@ -85,16 +85,18 @@ pred_file = pd.read_csv('cross_secs_dat/model_pred/'+cap+'caps_deg_results.csv')
 qual_similarity = pred_file['410qual'].values / pred_file['660qual'].values
 similar_inds = np.where((qual_similarity > 0.9) & (qual_similarity < 1.1))
 similar_sort = np.argsort(qual_similarity[similar_inds])
-qualities = np.round(pred_file[['410qual', '660qual']].values[similar_inds][similar_sort],2)
+qualities = pred_file[['410qual', '660qual']].values[similar_inds][similar_sort]
 files = pred_file['file'].values[similar_inds][similar_sort]
 arrivals410 = pred_file['410pred'].values[similar_inds][similar_sort]
 arrivals660 = pred_file['660pred'].values[similar_inds][similar_sort]
 
-qual_dic = {'0.1': 173, '0.2': 219, '0.3': 81,'0.4': 233, '0.5': 264,
-            '0.6': 203,'0.7': 224,'0.8': 191,'0.9': 209,'1.0': 296}
+# Specific for the SS cross-secs 5cap bins
+qual_dic = {'0.1': [173,], '0.2': [219,], '0.3': [81,],'0.4': [233, 232, 185],
+            '0.5': [264, 216, 226], '0.6': [225, 203, 194], '0.7': [224, 256, 201],
+            '0.8': [191, 181, 254],'0.9': [209, 214, 196],'1.0': [283,]}
 
 for i, key in enumerate(qual_dic):
-    index = qual_dic[key]
+    index = qual_dic[key][0]
     file = files[index]
     arr_410 = arrivals410[index]
     arr_660 = arrivals660[index]
@@ -103,10 +105,8 @@ for i, key in enumerate(qual_dic):
     quals = [qual_660, qual_410]
     
     try:
-        lauren_410 = get_Lauren_Pred(cap, '410', file)
-        lauren_660 = get_Lauren_Pred(cap, '660', file)
-        lerr_410 = get_Lauren_Pred(cap, '410', file)
-        lerr_660 = get_Lauren_Pred(cap, '660', file)
+        lauren_410, lerr_410 = get_Lauren_Pred(cap, '410', file)
+        lauren_660, lerr_660 = get_Lauren_Pred(cap, '660', file)
         l_errors = [lerr_660, lerr_410]
     except:
         pass
@@ -130,7 +130,7 @@ for i, key in enumerate(qual_dic):
     try:
         for i, ar in enumerate([lauren_660, lauren_410]):
             ax.axvline(ar, color='red', linestyle=':')
-        ax.axvline(ar, color='red', linestyle=':', label='lauren')
+        ax.axvline(ar, color='red', linestyle=':', label='bootstrap')
     except:
         pass
     #for i, ar in enumerate(arrivals_neg[np.argsort(counts_neg)][-5:]):
@@ -142,7 +142,11 @@ for i, key in enumerate(qual_dic):
     ax.set_xlabel('Time [s]')
     ax.set_ylabel('Amplitude')
     ax.set_title(cap + 'cap/' + file)
-    ax.xaxis.set_minor_locator(mtick.MultipleLocator(10))
+    ax.xaxis.set_major_locator(mtick.MultipleLocator(50))
+    ax.xaxis.set_minor_locator(mtick.MultipleLocator(25))
+    ax.yaxis.set_major_locator(mtick.MultipleLocator(0.5))
+    ax.yaxis.set_minor_locator(mtick.MultipleLocator(0.25))
     ax.legend(loc='upper left')
     fig.tight_layout(pad=0.5)
-    plt.show()
+    fig.savefig('../figs/cross_secs/quality_eg/qual' + key.replace('.','') + '.eps', dpi=500)
+    plt.close()

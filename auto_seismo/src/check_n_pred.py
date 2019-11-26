@@ -28,10 +28,11 @@ print('Loading model...')
 try:
     # Attempt to load the models, else raise an error 
     keras.losses.huber_loss = huber_loss
-    models = []
-    for m in config_dic['model_names']:
-        print(m)
-        models.append(load_model('./models/'+ m +'.h5'))
+    model = load_model('./models/' + config_dic['model_names'] + '.h5')
+    #models = []
+    #for m in config_dic['model_names']:
+    #    print(m)
+    #    models.append(load_model('./models/'+ m +'.h5'))
 except Exception as err:
     print(err)
     print('Error! Use an existing model or create a new one.')
@@ -44,7 +45,7 @@ for n, d in enumerate(config_dic['pred_dir']):
     make_Arrays(d, config_dic['arrival_var'], config_dic['window_before'], config_dic['window_after'])
     print('Predicting...')
     # Predict arrival times for all seismograms in the directory
-    files, pred_avg, pred_err, flipped = predict_Arrival(d, models)
+    files, pred_avg, pred_err, flipped = predict_Arrival(d, [model,])
     # Write the predictions to the SAC files
     print('Writing...')
     write_Pred(d, files, pred_avg, flipped, config_dic['prediction_var'])
