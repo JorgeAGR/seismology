@@ -94,7 +94,7 @@ def get_Model_Pred(cap, precursor):
     df = pd.read_csv(file_path)
     df = df.loc[:, ['file', precursor+'pred', precursor+'err', precursor+'amp', precursor+'qual']]
     
-    return df['file'].values, df[precursor+'pred'].values, df[precursor+'err'].values
+    return df['file'].values, df[precursor+'pred'].values, df[precursor+'err'].values, df[precursor+'qual'].values
 
 def cap2latlon(bins, units='deg'):
     # Converts string into floats (in radians)
@@ -132,8 +132,12 @@ def get_MinMax_Times(l_times, m_times):
 lauren_bins, lauren_times, lauren_errors = get_Lauren_Pred(cap, discontinuity)
 lauren_latlon = cap2latlon(lauren_bins)
 
-model_bins, model_times, model_errors = get_Model_Pred(cap, discontinuity)
+model_bins, model_times, model_errors, model_qual = get_Model_Pred(cap, discontinuity)
 model_latlon = cap2latlon(model_bins)
+model_bins = model_bins[model_qual > 0.4]
+model_latlon = model_latlon[model_qual > 0.4]
+model_times = model_times[model_qual > 0.4]
+model_errors = model_errors[model_qual > 0.4]
 
 fig = plt.figure()
 rows = 13

@@ -32,7 +32,7 @@ file_dir = '../../seismograms/cross_secs/' + str(cap_size) + 'caps_deg/'
 find660 = True
 model_path = '../auto_seismo/models/arrival_SS_pos_model_0040.h5'
 write_path = './cross_secs_dat/'
-
+'''
 parser = argparse.ArgumentParser(description='Predict precursor arrivals in vespagram cross-sectional data.')
 parser.add_argument('file_dir', help='Cross-section SAC files directory.', type=str, default=file_dir)
 parser.add_argument('find660', help='Require the 660 discontinuity to be found.', type=bool, default=find660)
@@ -52,7 +52,7 @@ write_path = args.write_path
 relevant_preds = args.N
 eps = args.e
 percent_data = args.p
-
+'''
 def cut_Window(cross_sec, times, t_i, t_f):
     init = np.where(times == np.round(t_i, 1))[0][0]
     end = np.where(times == np.round(t_f, 1))[0][0]
