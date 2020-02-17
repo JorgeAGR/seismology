@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# Simply change the arguments and run this bash script to start picking
+# > bash pick_seismos
+
+# Structure of command inputs:
+# python phase_picker.pu "seismogram directory" "phase to pick (use exact capitalization!)" "model to pick with (no need to change for now)"
+
+# Example:
+# python phase_picker.py /path/to/seismograms/scs_test/ ScS /path/to/model/model_name.h5
+
+python ./src/phase_picker.py /home/jorgeagr/Documents/seismograms/scs_test/rashni/ ScS ./models/arrival_SS_pos_model_0040.h5
+#python phase_picker.py directory phase model

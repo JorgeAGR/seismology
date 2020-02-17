@@ -15,6 +15,7 @@ time_window = 40
 # For prediction clustering
 eps=5
 percent_data=0.99
+n_preds = time_window * resample_Hz # Maximum number of times the peak could be found, from sliding the window
 
 parser = argparse.ArgumentParser(description='Predict precursor arrivals in vespagram cross-sectional data.')
 parser.add_argument('file_dir', help='Cross-section SAC files directory.', type=str)
@@ -34,7 +35,6 @@ import numpy as np
 from scipy.interpolate import interp1d
 import tensorflow as tf
 from sklearn.cluster import DBSCAN
-import time
 
 def cut_Window(cross_sec, times, t_i, t_f):
     init = np.where(times == np.round(t_i, 1))[0][0]
@@ -66,7 +66,7 @@ def scan(seis, times, time_i_grid, time_f_grid, shift, model, negative=False):
         window_preds[i] += np.abs(model.predict(seis_window.reshape(1, len(seis_window), 1))[0][0]) + t_i
     return window_preds
 
-def cluster_preds(predictions, eps=0.05, min_neighbors=2):
+def cluster_preds(predictions, eps=0.05, min_neighbors=2, max_preds=n_preds):
     dbscan = DBSCAN(eps, min_neighbors)
     dbscan.fit(predictions.reshape(-1,1))
     clusters, counts = np.unique(dbscan.labels_, return_counts=True)
@@ -77,7 +77,7 @@ def cluster_preds(predictions, eps=0.05, min_neighbors=2):
     arrivals_qual = np.zeros(len(clusters))
     for c in clusters:
         arrivals[c] = np.mean(predictions[dbscan.labels_ ==  c])
-        arrivals_qual[c] = counts[c]/400
+        arrivals_qual[c] = counts[c]/max_preds
     return arrivals, arrivals_qual
 
 def pick_Phase(file_dir, seis_file, phase_name, model, store_header='auto', relevant_preds=1, window_size=40, sample_Hz=10):
@@ -139,7 +139,7 @@ def pick_Phase(file_dir, seis_file, phase_name, model, store_header='auto', rele
     seis.stats.sac['k'+phase_var] = phase_name+'ap'
     seis.stats.sac['user'+phase_var[-1]] = np.round(arrival_qual*100)
     seis.stats.sac['kuser0'] = 'PickQual'
-    seis.write(file_dir + seis_file.rstrip('.s_fil') + '_auto' + '.sac')
+    seis.write(file_dir + 'picked/' + seis_file.rstrip('.s_fil') + '_auto' + '.sac')
     
     return
 
@@ -148,15 +148,18 @@ def pick_Phase(file_dir, seis_file, phase_name, model, store_header='auto', rele
 #else:
 #    session = tf.Session(config = tf.ConfigProto())
 #keras.losses.huber_loss = huber_loss
-model_path = '../models/'
+    
+model_path = ''#'../models/'
 model = tf.keras.models.load_model(model_path+model_name)
-#neg_model = load_model('../auto_seismo/models/arrival_SS_neg_model_0040.h5')
-n_preds = time_window * resample_Hz # Maximum number of times the peak could be found, from sliding the window
 
 files = np.sort([f for f in os.listdir(file_dir) if '.s_fil' in f])
 gen_whitespace = lambda x: ' '*len(x)
 
 import time as timelib
+
+if 'picked' not in os.listdir(file_dir):
+    os.mkdir(file_dir + 'picked/')
+
 print('\nPicking for', phase, 'phase in', len(files), 'files.')
 for f, seis_file in enumerate(files):
     print_string = 'File ' + str(f+1) + ' / ' + str(len(files)) + '...'
