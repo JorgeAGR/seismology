@@ -156,10 +156,15 @@ n_preds = time_window * resample_Hz # Maximum number of times the peak could be 
 files = np.sort([f for f in os.listdir(file_dir) if '.s_fil' in f])
 gen_whitespace = lambda x: ' '*len(x)
 
+import time as timelib
 print('\nPicking for', phase, 'phase in', len(files), 'files.')
 for f, seis_file in enumerate(files):
     print_string = 'File ' + str(f+1) + ' / ' + str(len(files)) + '...'
     print('\r'+print_string, end=gen_whitespace(print_string))
-    # Estimated picking time is 2 min (based on 1 sample)
+    # Estimated picking time is 2 min (based on 1 sample on 4 cpus)
+    tic =  timelib.time()
     pick_Phase(file_dir, seis_file, phase, model)
+    toc = timelib.time()
+    print('time to pick:', toc-tic, 'seconds')
+    break
 print('\nSeismograms picked. Bon appetit!')
