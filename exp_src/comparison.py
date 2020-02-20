@@ -46,16 +46,16 @@ for file in seis_files:
     init = np.where(time > (seismogram.stats.sac.t2 - 100 - seismogram.stats.sac.b))[0][0]
     end = len(time)#np.where(time > (seismogram.stats.sac.t2 + 100 - seismogram.stats.sac.b))[0][0]
     shift = time[init]
-    time = time[init:end]# - time[init]
+    time = time[init:end] + seismogram.stats.sac.b# - time[init]
     amp_i = seismogram.data[init:end]
     #amp_i = (amp_i - amp_i.min()) / (amp_i.max() - amp_i.min())
     amp_i = amp_i / np.abs(amp_i).max()
     # for test data
-    pred = seismogram.stats.sac.t7
-    actual = seismogram.stats.sac.t6 - seismogram.stats.sac.b
+    pred = seismogram.stats.sac.t7 + seismogram.stats.sac.b
+    actual = seismogram.stats.sac.t6# - seismogram.stats.sac.b
     # if using unknown data
     #pred = seismogram.stats.sac.t6 #- shift
-    theoretical = seismogram.stats.sac.t2 - seismogram.stats.sac.b
+    theoretical = seismogram.stats.sac.t2# - seismogram.stats.sac.b
     fig, ax = plt.subplots()
     ax.plot(time, amp_i, color='black')
     ax.axvline(theoretical, color='gray', linestyle='--', label='Theory')
@@ -64,11 +64,15 @@ for file in seis_files:
     ax.axvline(actual, color='red', linewidth=0.8, linestyle='--', label='Actual')
     ax.set_xlim(time[0], time[-1])
     ax.set_ylim(-1.05, 1.05)
-    ax.xaxis.set_minor_locator(mtick.MultipleLocator(5))
-    ax.yaxis.set_minor_locator(mtick.MultipleLocator(0.1))
-    ax.set_xlabel('Time From Cut [s]')
+    ax.xaxis.set_major_locator(mtick.MultipleLocator(50))
+    ax.yaxis.set_major_locator(mtick.MultipleLocator(0.5))
+    ax.xaxis.set_minor_locator(mtick.MultipleLocator(25))
+    ax.yaxis.set_minor_locator(mtick.MultipleLocator(0.25))
+    ax.set_xlabel('Time [s]')
     ax.set_ylabel('Relative Amplitude')
     ax.legend()
     plt.tight_layout()
     plt.close()
-    fig.savefig('../figs/etc/' + dir_name + 'pred_' + file + '.png', dpi=250)
+    fig.savefig('../figs/etc/' + dir_name + 'pred_' + file + '.png', dpi=500)
+    fig.savefig('../figs/etc/' + dir_name + 'pred_' + file + '.svg', dpi=500)
+    break

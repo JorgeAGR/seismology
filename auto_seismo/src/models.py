@@ -14,6 +14,28 @@ from keras.models import Sequential
 from keras.callbacks import CSVLogger, EarlyStopping, ModelCheckpoint
 from aux_funcs import check_String
 
+'''
+# Pending... Not sure if worth the trouble?
+class PickingModel(object):
+    
+    def __init__(self, model_name, batch_size, epochs, model_iters):
+        self.path = 'models/'
+        self.model_name = model_name
+        self.batch_size = batch_size
+        self.epochs = epochs
+        self.model_iters = model_iters
+        return
+    
+    def train_model(self):
+        return
+    
+    def load_model(self, model_file):
+        return
+    
+    def save_model(self):
+        return
+'''
+
 def load_Data(config):
     
     train_dir = check_String(config['train_dir'])

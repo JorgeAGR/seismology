@@ -59,24 +59,28 @@ for i, file in enumerate(files):
     actuals[i] = seis.stats.sac.t6 - seis.stats.sac.b
 
 shift_error = preds - actuals
-print(len(np.where(shift_error<0)[0])/len(shift_error))
+print('avg abs err:', np.abs(shift_error).mean(), '+/-', np.abs(shift_error).std())
+print('min error:', np.abs(shift_error).min())
+print('max error:', np.abs(shift_error).max())
+#print(len(np.where(shift_error<0)[0])/len(shift_error))
 fig, ax = plt.subplots()
 weights = np.ones_like(shift_error)/len(shift_error)
-shift_hist = ax.hist(shift_error, np.arange(-0.5, 0.5, 0.02), histtype='step', align='mid', 
+shift_hist = ax.hist(shift_error, np.arange(-0.5, 0.5, 0.05), histtype='step', align='mid', 
         color='black', linewidth=2, weights=weights, cumulative=False,)# label='Shifted Windows')
 #simple_hist = ax.hist(simple_error, np.arange(-1, 1, 0.1), histtype='step', align='mid',
 #               color='green', linewidth=2, weights=weights, cumulative=False, label='Single Window')
 ax.set_xlim(-0.5, 0.5)
-ax.set_ylim(0, 0.2)
+ax.set_ylim(0, 0.35)
 ax.xaxis.set_major_locator(mtick.MultipleLocator(0.1))
 ax.yaxis.set_major_locator(mtick.MultipleLocator(0.1))
-ax.xaxis.set_minor_locator(mtick.MultipleLocator(0.02))
-ax.yaxis.set_minor_locator(mtick.MultipleLocator(0.02))
+ax.xaxis.set_minor_locator(mtick.MultipleLocator(0.05))
+ax.yaxis.set_minor_locator(mtick.MultipleLocator(0.05))
 ax.set_xlabel(r'$t_{pred} - t_{actual}$ [s]')
 ax.set_ylabel('Fraction of seismograms')
 #ax.legend()
-plt.tight_layout()
+fig.tight_layout(pad=0.5)
 fig.savefig('../figs/shift_v_simple_hist.png', dpi=250)
+fig.savefig('../figs/shift_v_simple_hist.svg', dpi=250)
 
 fig2, ax2 = plt.subplots()
 shift_cum = ax2.hist(np.abs(shift_error), np.arange(0, 1.1, 0.001), histtype='step', align='mid', 
@@ -86,12 +90,13 @@ shift_cum = ax2.hist(np.abs(shift_error), np.arange(0, 1.1, 0.001), histtype='st
 ax2.axhline(0.95, linestyle='--', color='red')
 ax2.set_xlim(-0.01, 0.5)
 ax2.set_ylim(0, 1.05)
-ax2.xaxis.set_major_locator(mtick.MultipleLocator(0.5))
-ax2.yaxis.set_major_locator(mtick.MultipleLocator(0.2))
-ax2.xaxis.set_minor_locator(mtick.MultipleLocator(0.1))
+ax2.xaxis.set_major_locator(mtick.MultipleLocator(0.25))
+ax2.yaxis.set_major_locator(mtick.MultipleLocator(0.1))
+ax2.xaxis.set_minor_locator(mtick.MultipleLocator(0.05))
 ax2.yaxis.set_minor_locator(mtick.MultipleLocator(0.05))
 ax2.set_xlabel(r'$|t_{pred} - t_{actual}| [s]$')
 ax2.set_ylabel('Fraction of counts')
 #ax2.legend(loc='lower right')
-plt.tight_layout()
+fig2.tight_layout(pad=0.5)
 fig2.savefig('../figs/shift_v_simple_cumhist.png', dpi=250)
+fig2.savefig('../figs/shift_v_simple_cumhist.svg', dpi=250)
