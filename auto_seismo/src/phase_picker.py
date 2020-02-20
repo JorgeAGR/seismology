@@ -8,6 +8,7 @@ Created on Fri Feb  7 17:48:13 2020
 
 import os
 import argparse
+import gc
 
 resample_Hz = 10
 time_window = 40
@@ -17,6 +18,7 @@ eps=5
 percent_data=0.99
 n_preds = time_window * resample_Hz # Maximum number of times the peak could be found, from sliding the window
 
+'''
 parser = argparse.ArgumentParser(description='Predict precursor arrivals in vespagram cross-sectional data.')
 parser.add_argument('file_dir', help='Cross-section SAC files directory.', type=str)
 parser.add_argument('phase', help='Phase to pick for.', type=str)
@@ -26,6 +28,11 @@ args = parser.parse_args()
 file_dir = args.file_dir
 model_name = args.model_name
 phase = args.phase
+'''
+
+file_dir = '/home/jorgeagr/Documents/seismograms/scs_test/rashni/'
+phase = 'ScS'
+model_name = '../models/arrival_SS_pos_model_0040.h5'
 
 if file_dir[-1] != '/':
     file_dir += '/'
@@ -101,9 +108,16 @@ def pick_Phase(file_dir, seis_file, phase_name, model, store_header='auto', rele
 
     pos_preds = scan(seis, times, time_i_grid, time_f_grid, shift, model)
     neg_preds = scan(seis, times, time_i_grid, time_f_grid, shift, model, negative=True)
+    
+    # Memory becoming an issue? At least on PCs
+    #del time_i_grid, time_f_grid, times
 
     arrivals_pos, arrivals_pos_qual = cluster_preds(pos_preds)
     arrivals_neg, arrivals_neg_qual = cluster_preds(neg_preds)
+    
+    #del pos_preds, neg_preds
+    
+    #gc.collect()
     
     highest_pos_ind = np.argsort(arrivals_pos_qual)[-1]
     highest_neg_ind = np.argsort(arrivals_neg_qual)[-1]
@@ -139,7 +153,7 @@ def pick_Phase(file_dir, seis_file, phase_name, model, store_header='auto', rele
     seis.stats.sac['k'+phase_var] = phase_name+'ap'
     seis.stats.sac['user'+phase_var[-1]] = np.round(arrival_qual*100)
     seis.stats.sac['kuser0'] = 'PickQual'
-    seis.write(file_dir + 'picked/' + seis_file.rstrip('.s_fil') + '_auto' + '.sac')
+    seis.write('{}picked/{}_auto.sac'.format(file_dir, seis_file.rstrip('.s_fil')))
     
     return
 
@@ -155,19 +169,12 @@ model = tf.keras.models.load_model(model_path+model_name)
 files = np.sort([f for f in os.listdir(file_dir) if '.s_fil' in f])
 gen_whitespace = lambda x: ' '*len(x)
 
-import time as timelib
-
 if 'picked' not in os.listdir(file_dir):
     os.mkdir(file_dir + 'picked/')
 
 print('\nPicking for', phase, 'phase in', len(files), 'files.')
 for f, seis_file in enumerate(files):
-    print_string = 'File ' + str(f+1) + ' / ' + str(len(files)) + '...'
+    print_string = 'File {} / {} ...'.format(f+1, len(files))
     print('\r'+print_string, end=gen_whitespace(print_string))
-    # Estimated picking time is 2 min (based on 1 sample on 4 cpus)
-    tic =  timelib.time()
     pick_Phase(file_dir, seis_file, phase, model)
-    toc = timelib.time()
-    print('time to pick:', toc-tic, 'seconds')
-    break
 print('\nSeismograms picked. Bon appetit!')
