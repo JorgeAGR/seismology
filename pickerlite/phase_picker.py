@@ -36,7 +36,7 @@ if file_dir[-1] != '/':
 import obspy
 import numpy as np
 from scipy.interpolate import interp1d
-import tensorflow as tf
+from tensorflow.keras.models import load_model
 from sklearn.cluster import DBSCAN
 from time import time as clock
 
@@ -164,7 +164,7 @@ def write_Exception(file_dir, file_num, seis_file, exception, mode='a'):
 #keras.losses.huber_loss = huber_loss
     
 model_path = ''#'../models/'
-model = tf.keras.models.load_model(model_path+model_name)
+model = load_model(model_path+model_name)
 
 files = np.sort([f for f in os.listdir(file_dir) if '.s_fil' in f])
 gen_whitespace = lambda x: ' '*len(x)
