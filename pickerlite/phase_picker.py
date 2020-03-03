@@ -114,7 +114,7 @@ def pick_Phase(file_dir, seis_file, phase_name, model, store_header='auto', rele
     
     t_diff = arrival_pos - arrival_neg
     qual_diff = np.abs(arrival_pos_qual - arrival_neg_qual)
-    # If theyre this close and of similar quality,
+    # If they're this close and of similar quality,
     # then the model is picking the side lobe.
     if (np.abs(t_diff) <= window_size) and (qual_diff < 0.1):
         if t_diff < 0:
