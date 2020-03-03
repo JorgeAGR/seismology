@@ -1,0 +1,6 @@
+datadir:../../seismograms/synthetics_test/
+th_arrival:t2
+arrival_var:t6
+type:SyntheticSS_0040
+window_before:0
+window_after:40
