@@ -1,0 +1,11 @@
+Script for picking seismic phases using a pretrained model with Keras/Tensorflow.
+
+Link to user guide document: https://web.nmsu.edu/~jorgeagr/Phase_Picker_Lite_User_Guide.pdf
+
+Structure of command inputs:
+python phase_picker.py "seismogram directory" "phase to pick (use exact capitalization!)" "model to pick with (no need to change for now)"
+
+Example (if running from directory with the script):
+python phase_picker.py /home/username/seismograms/scs/ ScS models/SS_40_model.h5
+
+If using the cluster, make sure you change the inputs in the "pick_phases_qsub" file and submit that.

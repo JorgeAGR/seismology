@@ -1,0 +1,2 @@
+0.2:
+-- Program no longer crashes after an error is found in a seismogram. Writes problematic seismograms into a ``bad.log'' file within the ``picked/'' folder, with the name of files which encountered some error.
