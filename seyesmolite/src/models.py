@@ -212,16 +212,16 @@ class PickingModel(object):
         if self.debug:
             print('model saved at this point in no debug')
             return
-        model = models[best_model]
-        model.save(self.model_path + self.model_name + '.h5')
-        np.savez(self.model_path + 'train_logs/train_history', loss=models_train_lpe,
-                 val_loss=models_test_lpe, best_model=best_model)
+        self.model = models[best_model]
+        np.savez(self.model_path + 'train_logs/{}_train_history'.format(self.model_name),
+                loss=models_train_lpe, val_loss=models_test_lpe, best_model=best_model)
         return
     
     def load_Model(self, model_file):
         return
     
     def save_Model(self):
+        self.model.save(self.model_path + self.model_name + '.h5')
         return
 
     def __rossNet(self):
