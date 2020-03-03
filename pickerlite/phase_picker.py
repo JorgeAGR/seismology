@@ -18,7 +18,7 @@ percent_data=0.99
 n_preds = time_window * resample_Hz # Maximum number of times the peak could be found, from sliding the window
 
 parser = argparse.ArgumentParser(description='Predict precursor arrivals in vespagram cross-sectional data.')
-parser.add_argument('file_dir', help='Cross-section SAC files directory.', type=str)
+parser.add_argument('file_dir', help='SAC files directory.', type=str)
 parser.add_argument('phase', help='Phase to pick for.', type=str)
 parser.add_argument('model_name', help='Path to model H5 file.', type=str)
 parser.add_argument('-no', '--nooverwrite', help='Whether to the picker should overwrite the original SAC file. Default is true.',
@@ -156,14 +156,8 @@ def write_Exception(file_dir, file_num, seis_file, exception, mode='a'):
     with open(file_dir + 'picked/'*-(~overwrite) + 'bad.log', mode) as log:
         print('File {}: {}'.format(f+1, seis_file), file=log)
         print('Error: {}'.format(exception), end='\n\n', file=log)
-
-#if tf.test.is_gpu_available() == True:
-#    pass
-#else:
-#    session = tf.Session(config = tf.ConfigProto())
-#keras.losses.huber_loss = huber_loss
     
-model_path = ''#'../models/'
+model_path = ''
 model = load_model(model_path+model_name)
 
 files = np.sort([f for f in os.listdir(file_dir) if '.s_fil' in f])

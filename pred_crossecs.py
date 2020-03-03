@@ -291,12 +291,12 @@ def find_410(pred_csv_path, eps=eps, percent_data=percent_data):
                                   '660pred':preds660, '660err':errs660, '660amp':amps660, '660qual':quals660})
     return df_disc
 
-#keras.losses.huber_loss = huber_loss
-pos_model = load_model(model_path)
-#neg_model = load_model('../auto_seismo/models/arrival_SS_neg_model_0040.h5')
+pred_model = load_model(model_path)
 n_preds = time_window * resample_Hz # Maximum number of times the peak could be found, from sliding the window
 
-files = np.sort([f.rstrip('.sac') for f in os.listdir(file_dir) if '.sac' in f])
+files = np.sort(os.listdir(file_dir))
+extension = '.{}'.format(files[0].split('.')[-1])
+files = np.sort([f.rstrip(extension) for f in files if extension in f])
 gen_whitespace = lambda x: ' '*len(x)
 pred_time = 0
 
@@ -316,7 +316,7 @@ for f, cs_file in enumerate(files):
     print_string = 'File {} / {}... Est. Time per Prediction: {:.2f} sec'.format(f+1, len(files), pred_time)
     print('\r'+print_string, end=gen_whitespace(print_string))
     tick = clock()
-    results = find_Precursors(file_dir, cs_file+'.sac', pos_model, relevant_preds)
+    results = find_Precursors(file_dir, cs_file+extension, pred_model, relevant_preds)
     tock = clock()
     if f == 0:
         pred_time = tock-tick
