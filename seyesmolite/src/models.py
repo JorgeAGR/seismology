@@ -13,7 +13,7 @@ from tensorflow.keras.layers import Dense, Flatten, Conv1D, MaxPooling1D, BatchN
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.callbacks import CSVLogger, EarlyStopping, ModelCheckpoint
 import obspy
-from aux_funcs import check_String, read_Config
+from src.aux_funcs import check_String, read_Config
 
 class PickingModel(object):
     
