@@ -27,6 +27,7 @@ eps=5
 percent_data=0.99
 
 # User inputs
+'''
 cap_size = 15
 file_dir = '../../seismograms/cross_secs/' + str(cap_size) + 'caps_deg/'
 find660 = True
@@ -34,10 +35,10 @@ model_path = '../auto_seismo/models/arrival_SS_pos_model_0040.h5'
 write_path = './cross_secs_dat/'
 '''
 parser = argparse.ArgumentParser(description='Predict precursor arrivals in vespagram cross-sectional data.')
-parser.add_argument('file_dir', help='Cross-section SAC files directory.', type=str, default=file_dir)
-parser.add_argument('find660', help='Require the 660 discontinuity to be found.', type=bool, default=find660)
-parser.add_argument('model_path', help='Path to model H5 file.', type=str, default=model_path)
-parser.add_argument('write_path', help='Path to write predicition result CSVs.', type=str, default=write_path)
+parser.add_argument('file_dir', help='Cross-section SAC files directory.', type=str)#, default=file_dir)
+parser.add_argument('find660', help='Require the 660 discontinuity to be found.', type=bool)
+parser.add_argument('model_path', help='Path to model H5 file.', type=str)
+parser.add_argument('write_path', help='Path to write predicition result CSVs.', type=str)
 parser.add_argument('-N', metavar='relevant_preds', help='Number of top predictions to consider.',
                     type=int, default=relevant_preds)
 parser.add_argument('-e', metavar='eps', help='Clustering maximum distance from core point.', type=int, default=eps)
@@ -52,7 +53,7 @@ write_path = args.write_path
 relevant_preds = args.N
 eps = args.e
 percent_data = args.p
-'''
+
 def cut_Window(cross_sec, times, t_i, t_f):
     init = np.where(times == np.round(t_i, 1))[0][0]
     end = np.where(times == np.round(t_f, 1))[0][0]
