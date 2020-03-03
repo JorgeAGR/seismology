@@ -21,14 +21,14 @@ parser = argparse.ArgumentParser(description='Predict precursor arrivals in vesp
 parser.add_argument('file_dir', help='Cross-section SAC files directory.', type=str)
 parser.add_argument('phase', help='Phase to pick for.', type=str)
 parser.add_argument('model_name', help='Path to model H5 file.', type=str)
-parser.add_argument('-o', '--overwrite', help='Whether to the picker should overwrite the original SAC file. Default is true.',
-                    type=bool, default=True)
+parser.add_argument('-no', '--nooverwrite', help='Whether to the picker should overwrite the original SAC file. Default is true.',
+                    action='store_false')
 args = parser.parse_args()
 
 file_dir = args.file_dir
 model_name = args.model_name
 phase = args.phase
-overwrite = args.overwrite
+overwrite = args.nooverwrite
 
 if file_dir[-1] != '/':
     file_dir += '/'
@@ -152,7 +152,7 @@ def pick_Phase(file_dir, seis_file, phase_name, model, store_header='auto', rele
     return
 
 def write_Exception(file_dir, file_num, seis_file, exception, mode='a'):
-    with open(file_dir + 'picked/'*~overwrite + 'bad.log', mode) as log:
+    with open(file_dir + 'picked/'*-(~overwrite) + 'bad.log', mode) as log:
         print('File {}: {}'.format(f+1, seis_file), file=log)
         print('Error: {}'.format(exception), end='\n\n', file=log)
 
