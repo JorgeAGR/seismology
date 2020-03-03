@@ -24,7 +24,8 @@ class PickingModel(object):
         self.batch_size = config['batch_size']
         self.epochs = config['epochs']
         self.model_iters = config['model_iters']
-        self.test_split = config['test_split']
+        self.test_split = float(config['test_split'])
+        self.debug = config['debug']
         
         self.files_path = list(map(lambda x: x+'/' if (x[-1] != '/') else x, [config['files_path'],]))[0]
         self.sample_rate = config['sample_rate']
@@ -38,12 +39,12 @@ class PickingModel(object):
         self.total_time = (self.window_before + self.window_after) * self.sample_rate
         
         if self.model_name not in os.listdir('models/'):
-            for directory in list(map(lambda x: x.format(self.model_name),
-                                      ['models/{}/','models/{}/train_logs/', 'models/{}/npz/'])):
+            for directory in [self.model_path, self.model_path+'train_logs/', self.model_path+'npz/']:
+                #list(map(lambda x: x.format(self.model_name), ['models/{}/','models/{}/train_logs/', 'models/{}/npz/'])):
                 os.mkdir(directory)
         return
     
-    def create_Train_Data(self):
+    def __create_Train_Data(self):
         '''
         Function that iterates through seismograms in directory, perform preprocessing,
         create a time window around the arrival time and randomly shift it to augment
@@ -51,10 +52,13 @@ class PickingModel(object):
         the future. Meant for training/testing data.
         '''
         files = np.sort(os.listdir(self.files_path))
+        gen_whitespace = lambda x: ' '*len(x)
         
-        for i, file in enumerate(files):
+        for f, file in enumerate(files):
             file = check_String(file)
-            print(i+1, '/', len(files))
+            print_string = 'File ' + str(f+1) + ' / ' + str(len(files)) + '...'
+            print('\r'+print_string, end=gen_whitespace(print_string))
+            
             seismogram = obspy.read(self.files_path + file)
             seismogram = seismogram[0].resample(self.sample_rate)
             # Begging time
@@ -82,10 +86,10 @@ class PickingModel(object):
             rand_window_shifts = rand_window_shifts[abs_sort]
             rand_window_shifts[0] = 0
             
-            seis_windows = np.zeros((self.number_shift+1, self.total_time))
+            seis_windows = np.zeros((self.number_shift+1, self.total_time, 1))
             arrivals = np.zeros((self.number_shift+1, 1))
             cut_time = np.zeros((self.number_shift+1, 1))
-            for j, n in enumerate(rand_window_shifts):
+            for i, n in enumerate(rand_window_shifts):
                 rand_arrival = th_arrival - n * self.window_shift
                 init = np.where(np.round(rand_arrival - self.window_before, 1) == time)[0][0]
                 end = np.where(np.round(rand_arrival + self.window_after, 1) == time)[0][0]
@@ -97,168 +101,154 @@ class PickingModel(object):
                 amp_i = amp[init:end]
                 # Normalize by absolute peak, [-1, 1]
                 amp_i = amp_i / np.abs(amp_i).max()
-                seis_windows[j] = amp_i
-                arrivals[j] = arrival - time[init]
-                cut_time[j] = time[init]
+                seis_windows[i] = amp_i.reshape(self.total_time, 1)
+                arrivals[i] = arrival - time[init]
+                cut_time[i] = time[init]
             
-            np.savez('models/{}/npz/{}'.format(self.model_name, file), seis=seis_windows, arrival=arrivals, cut=cut_time)
+            np.savez(self.model_path+'npz/{}'.format(file),
+                     seis=seis_windows, arrival=arrivals, cut=cut_time)
+            
+        return
     
-    def _train_test_split(self, idnum, seed=None):
+    def __train_test_split(self, idnum, seed=None):
         npz_files = np.sort(os.listdir('models/{}/npz'.format(self.model_name)))
-        cutoff = int(len(npz_files) * self.test_split)
+        cutoff = int(len(npz_files) * (1-self.test_split))
         np.random.seed(seed)
         np.random.shuffle(npz_files)
-        train_npz = npz_files[:cutoff]
-        test_npz = npz_files[cutoff:]
-        np.savez('models/{}/npz/train_test_split{}'.format(self.model_name, idnum), train=train_npz, test=test_npz)
+        train_npz_list = npz_files[:cutoff]
+        test_npz_list = npz_files[cutoff:]
+        np.savez(self.model_path+'train_logs/train_test_split{}'.format(idnum),
+                 train=train_npz_list, test=test_npz_list)
         
-        return train_npz, test_npz
-        
-    def _load_Data(self):
+        return train_npz_list, test_npz_list
     
-    def train_model(self):
+    def __load_Data(self, npz_list):
+        seis_array = np.zeros((len(npz_list)*(self.number_shift+1), self.total_time, 1))
+        arr_array = np.zeros((len(npz_list)*(self.number_shift+1), 1))
+        for i, file in enumerate(npz_list):
+            npz = np.load(self.model_path+'npz/'+file)
+            for j in range(len(npz['seis'])):
+                seis_array[i+self.number_shift*i+j] = npz['seis'][j]
+                seis_array[i+self.number_shift*i+j] = npz['arrival'][j]
+        return seis_array, arr_array
+    
+    def __get_Callbacks(self, epochs):
+        stopper = EarlyStopping(monitor='val_loss', min_delta=0.001, 
+                                patience=epochs//2, restore_best_weights=True)
+        # Include Checkpoint? CSVLogger?
+        return [stopper,]
+    
+    def train_Model(self):
+        if self.debug:
+            self.epochs=10
+            self.model_iters=1
+        
+        self.__create_Train_Data()
+        
+        models = []
+        models_train_means = np.zeros(self.model_iters)
+        models_train_stds = np.zeros(self.model_iters)
+        models_test_means = np.zeros(self.model_iters)
+        models_test_stds = np.zeros(self.model_iters)
+        models_test_final_loss = np.zeros(self.model_iters)
+        
+        models_train_lpe = np.zeros((self.model_iters, self.epochs))
+        models_test_lpe = np.zeros((self.model_iters, self.epochs))
+    
+        for m in range(self.model_iters):        
+            print('Training arrival prediction model', m+1)
+            model = self.__rossNet()
+            
+            callbacks = self.__get_Callbacks(self.epochs)
+            
+            train_files, test_files = self.__train_test_split(m)
+            train_x, train_y = self.__load_Data(train_files)
+            test_x, test_y = self.__load_Data(test_files)
+            
+            train_hist = model.fit(train_x, train_y,
+                                   validation_data=(test_x, test_y),
+                                   batch_size=self.batch_size,
+                                   epochs=self.epochs,
+                                   verbose=2,
+                                   callbacks=callbacks)
+            
+            total_epochs = len(train_hist.history['loss'])
+            
+            train_pred = model.predict(train_x)
+            test_pred = model.predict(test_x)
+            test_loss = model.evaluate(test_x, test_y,
+                                       batch_size=self.batch_size, verbose=0)
+            
+            model_train_diff = np.abs(train_y - train_pred)
+            model_test_diff = np.abs(test_y - test_pred)
+            model_train_mean = np.mean(model_train_diff)
+            model_train_std = np.std(model_train_diff)
+            model_test_mean = np.mean(model_test_diff)
+            model_test_std = np.std(model_test_diff)
+            
+            print('Train Error:{:.3f} +/- {:.3f}'.format(model_train_mean, model_train_std))
+            print('Test Error:{:.3f} +/- {:.3f}'.format(model_test_mean, model_test_std))
+            print('Test Loss:{:.3f}'.format(test_loss))
+            
+            models.append(model)
+            models_train_means[m] += model_train_mean
+            models_train_stds[m] += model_train_std
+            models_test_means[m] += model_test_mean
+            models_test_stds[m] += model_test_std
+            models_test_final_loss[m] += test_loss
+            models_train_lpe[m][:total_epochs] = train_hist.history['loss']
+            models_test_lpe[m][:total_epochs] = train_hist.history['val_loss']
+        
+        #best_model = np.argmin(models_means)
+        best_model = np.argmin(models_train_means)
+        print('\nUsing best model: Model {}\n'.format(best_model + 1))
+        print('Best Model Results:')
+        print('Training Avg Diff: {:.3f}'.format(models_train_means[best_model]))
+        print('Training Avg Diff Uncertainty: {:.3f}'.format(models_train_stds[best_model]))
+        print('Testing Avg Diff: {:.3f}'.format(models_test_means[best_model]))
+        print('Testing Avg Diff Uncertainty: {:.3f}'.format(models_test_stds[best_model]))
+        print('Test Loss: {:.3f}'.format(models_test_final_loss[best_model]))
+        print('\n')
+        if self.debug:
+            print('model saved at this point in no debug')
+            return
+        model = models[best_model]
+        model.save(self.model_path + self.model_name + '.h5')
+        np.savez(self.model_path + 'train_logs/train_history', loss=models_train_lpe,
+                 val_loss=models_test_lpe, best_model=best_model)
         return
     
-    def load_model(self, model_file):
+    def load_Model(self, model_file):
         return
     
-    def save_model(self):
+    def save_Model(self):
         return
 
-def load_Data(config):
-    
-    train_dir = check_String(config['train_dir'])
-    seismos_train = check_String(config['seismos_train'])
-    arrivals_train = check_String(config['arrivals_train'])
-    seismos_test = check_String(config['seismos_test'])
-    arrivals_test = check_String(config['arrivals_test'])
-    
-    data = {'train_x': np.load(train_dir + seismos_train),
-            'train_y': np.load(train_dir + arrivals_train),
-            'test_x': np.load(train_dir + seismos_test),
-            'test_y': np.load(train_dir + arrivals_test)}
-    
-    if config['debug_mode']:
-        for key in data:
-            data[key] = data[key][:100]
-    
-    return data
-
-def rossNet(seismogram_length):
-    '''
-    Notes
-    ------------
-    Ref: https://doi.org/10.1029/2017JB015251 
-    '''
-    model = Sequential()
-    model.add(Conv1D(32, 21, activation='relu',))
-    model.add(BatchNormalization())
-    model.add(MaxPooling1D(pool_size=2))
-    
-    model.add(Conv1D(64, 15, activation='relu'))
-    model.add(BatchNormalization())
-    model.add(MaxPooling1D(pool_size=2))
-    
-    model.add(Conv1D(128, 11, activation='relu'))
-    model.add(BatchNormalization())
-    model.add(MaxPooling1D(pool_size=2))
-    
-    model.add(Flatten())
-    model.add(Dense(512, activation='relu'))
-    model.add(Dense(512, activation='relu'))
-    model.add(Dense(1, activation='linear'))
-    
-    model.compile(loss=Huber,
-                  optimizer=Adam())
-    
-    return model
-
-def get_Callbacks(epochs):
-    
-    stopper = EarlyStopping(monitor='val_loss', min_delta=0.001, 
-                            patience=epochs//2, restore_best_weights=True)
-    # Include Checkpoint? CSVLogger?
-    return [stopper,]
-
-def train_PickingModel(config):
-    
-    model_name = check_String(config['model_name'])
-    debug_mode = config['debug_mode']
-    batch_size = config['batch_size']
-    epochs = config['epochs']
-    model_iters = config['model_iters']
-    
-    if debug_mode:
-        epochs=10
-        model_iters=1
-    
-    data = load_Data(config)
-    
-    models = []
-    models_train_means = np.zeros(model_iters)
-    models_train_stds = np.zeros(model_iters)
-    models_test_means = np.zeros(model_iters)
-    models_test_stds = np.zeros(model_iters)
-    models_test_final_loss = np.zeros(model_iters)
-    
-    models_train_lpe = np.zeros((model_iters, epochs))
-    models_test_lpe = np.zeros((model_iters, epochs))
-
-    for m in range(model_iters):        
-        print('Training arrival prediction model', m+1)
-        model = rossNet(len(data['test_x'][0]))
+    def __rossNet(self):
+        '''
+        Notes
+        ------------
+        Ref: https://doi.org/10.1029/2017JB015251 
+        '''
+        model = Sequential()
+        model.add(Conv1D(32, 21, activation='relu',))
+        model.add(BatchNormalization())
+        model.add(MaxPooling1D(pool_size=2))
         
-        callbacks = get_Callbacks(epochs)
-        train_hist = model.fit(data['train_x'], data['train_y'],
-                               validation_data=(data['test_x'], data['test_y']),
-                               batch_size=batch_size,
-                               epochs=epochs,
-                               verbose=2,
-                               callbacks=callbacks)
+        model.add(Conv1D(64, 15, activation='relu'))
+        model.add(BatchNormalization())
+        model.add(MaxPooling1D(pool_size=2))
         
-        total_epochs = len(train_hist.history['loss'])
+        model.add(Conv1D(128, 11, activation='relu'))
+        model.add(BatchNormalization())
+        model.add(MaxPooling1D(pool_size=2))
         
-        train_pred = model.predict(data['train_x'])
-        test_pred = model.predict(data['test_x'])
-        test_loss = model.evaluate(data['test_x'], data['test_y'],
-                                   batch_size=batch_size, verbose=0)
+        model.add(Flatten())
+        model.add(Dense(512, activation='relu'))
+        model.add(Dense(512, activation='relu'))
+        model.add(Dense(1, activation='linear'))
         
-        model_train_diff = np.abs(data['train_y'] - train_pred)
-        model_test_diff = np.abs(data['test_y'] - test_pred)
-        model_train_mean = np.mean(model_train_diff)
-        model_train_std = np.std(model_train_diff)
-        model_test_mean = np.mean(model_test_diff)
-        model_test_std = np.std(model_test_diff)
+        model.compile(loss=Huber(),
+                      optimizer=Adam())
         
-        print('Train Error:', model_train_mean, '+/-', model_train_std)
-        print('Test Error:', model_test_mean, '+/-', model_test_std)
-        print('Test Loss:', test_loss)
-        
-        models.append(model)
-        models_train_means[m] += model_train_mean
-        models_train_stds[m] += model_train_std
-        models_test_means[m] += model_test_mean
-        models_test_stds[m] += model_test_std
-        models_test_final_loss[m] += test_loss
-        models_train_lpe[m][:total_epochs] = train_hist.history['loss']
-        models_test_lpe[m][:total_epochs] = train_hist.history['val_loss']
-    
-    #best_model = np.argmin(models_means)
-    best_model = np.argmin(models_train_means)
-    print('Using best model: Model', best_model + 1)
-    print('Best Model Results:')
-    print('Training Avg Diff:', models_train_means[best_model])
-    print('Training Avg Diff Uncertainty :', models_train_stds[best_model])
-    print('Testing Avg Diff:', models_test_means[best_model])
-    print('Testing Avg Diff Uncertainty:', models_test_stds[best_model])
-    print('Test Loss:', models_test_final_loss[best_model])
-    print('\n')
-    if debug_mode:
-        print('model saved in no debug')
-        return
-    model = models[best_model]
-    model.save('./models/' + model_name + '.h5')
-    np.savez('./models/etc/' + model_name + '_training_logs', loss=models_train_lpe,
-             val_loss=models_test_lpe, best_model=best_model)
-    
-    return
+        return model
