@@ -13,4 +13,4 @@
 # Cd into the directory where the script is. Or just add the proper paths to the script and model below
 cd Documents/seismology/
 
-python pred_crossecs.py ~/Documents/seismograms/SS_kept/$PBS_ARRAYID ss_ind_precursors/ pickerlite/models/SS_40_model.h5
+python pred_crossecs.py ~/Documents/seismograms/SS_kept/SS_kept$PBS_ARRAYID ss_ind_precursors/ pickerlite/models/SS_40_model.h5
