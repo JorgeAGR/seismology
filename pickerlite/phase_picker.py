@@ -38,6 +38,7 @@ import numpy as np
 from scipy.interpolate import interp1d
 import tensorflow as tf
 from sklearn.cluster import DBSCAN
+from time import time as clock
 
 def cut_Window(cross_sec, times, t_i, t_f):
     init = np.where(times == np.round(t_i, 1))[0][0]
@@ -173,11 +174,16 @@ if not overwrite:
         os.mkdir(file_dir + 'picked/')
 
 print('\nPicking for', phase, 'phase in', len(files), 'files.')
+pred_time = 0
 for f, seis_file in enumerate(files):
-    print_string = 'File ' + str(f+1) + ' / ' + str(len(files)) + '...'
+    print_string = 'File {} / {}... Est. Time per Prediction: {:.2f} sec'.format(f+1, len(files), pred_time)
     print('\r'+print_string, end=gen_whitespace(print_string))
     try:
+        tick = clock()
         pick_Phase(file_dir, seis_file, phase, model)
+        tock = clock()
+        if f == 0:
+            pred_time = tock-tick
     except (KeyboardInterrupt, SystemExit):
         raise
     except Exception as exception:

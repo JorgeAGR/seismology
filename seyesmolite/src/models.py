@@ -12,6 +12,7 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.layers import Dense, Flatten, Conv1D, MaxPooling1D, BatchNormalization
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.callbacks import CSVLogger, EarlyStopping, ModelCheckpoint
+from time import time as clock
 import obspy
 from src.aux_funcs import check_String, read_Config
 
@@ -154,7 +155,7 @@ class PickingModel(object):
         
         models_train_lpe = np.zeros((self.model_iters, self.epochs))
         models_test_lpe = np.zeros((self.model_iters, self.epochs))
-    
+        tick = clock()
         for m in range(self.model_iters):        
             print('Training arrival prediction model', m+1)
             model = self.__rossNet()
@@ -200,6 +201,8 @@ class PickingModel(object):
             models_test_lpe[m][:total_epochs] = train_hist.history['val_loss']
         
         #best_model = np.argmin(models_means)
+        tock = clock()
+        train_time = (tock-tick)/3600 # hours
         best_model = np.argmin(models_train_means)
         print('\nUsing best model: Model {}\n'.format(best_model + 1))
         print('Best Model Results:')
@@ -208,13 +211,14 @@ class PickingModel(object):
         print('Testing Avg Diff: {:.3f}'.format(models_test_means[best_model]))
         print('Testing Avg Diff Uncertainty: {:.3f}'.format(models_test_stds[best_model]))
         print('Test Loss: {:.3f}'.format(models_test_final_loss[best_model]))
+        print('Total Training Time: {:.2f} hrs'.format(train_time))
         print('\n')
         if self.debug:
             print('model saved at this point in no debug')
             return
         self.model = models[best_model]
         np.savez(self.model_path + 'train_logs/{}_train_history'.format(self.model_name),
-                loss=models_train_lpe, val_loss=models_test_lpe, best_model=best_model)
+                loss=models_train_lpe, val_loss=models_test_lpe, best_model=best_model, train_time=train_time)
         return
     
     def load_Model(self, model_file):
