@@ -11,11 +11,12 @@ import argparse
 import obspy
 import numpy as np
 import pandas as pd
-from keras.models import load_model
-import keras.losses
-import keras.metrics
-from tensorflow.losses import huber_loss
+from tensorflow.keras.models import load_model
+#import tensorflow.keras.losses
+#import tensorflow.keras.metrics
+#from tensorflow.losses import huber_loss
 from sklearn.cluster import DBSCAN
+from time import time as clock
 
 resample_Hz = 10
 time_window = 40
@@ -29,30 +30,35 @@ percent_data=0.99
 # User inputs
 '''
 cap_size = 15
-file_dir = '../../seismograms/cross_secs/' + str(cap_size) + 'caps_deg/'
+file_dir = '../seismograms/cross_secs/' + str(cap_size) + 'caps_deg/'
 find660 = True
-model_path = '../auto_seismo/models/arrival_SS_pos_model_0040.h5'
-write_path = './cross_secs_dat/'
+model_path = './pickerlite/models/SS_40_model.h5'
+write_path = '.'
 '''
 parser = argparse.ArgumentParser(description='Predict precursor arrivals in vespagram cross-sectional data.')
 parser.add_argument('file_dir', help='Cross-section SAC files directory.', type=str)#, default=file_dir)
-parser.add_argument('find660', help='Require the 660 discontinuity to be found.', type=bool)
-parser.add_argument('model_path', help='Path to model H5 file.', type=str)
+#parser.add_argument('find660', help='Require the 660 discontinuity to be found.', type=bool)
 parser.add_argument('write_path', help='Path to write predicition result CSVs.', type=str)
+parser.add_argument('model_path', help='Path to model H5 file.', type=str)
 parser.add_argument('-N', metavar='relevant_preds', help='Number of top predictions to consider.',
                     type=int, default=relevant_preds)
 parser.add_argument('-e', metavar='eps', help='Clustering maximum distance from core point.', type=int, default=eps)
 parser.add_argument('-p', metavar='percent_data', help='Percentage of data to define a core point.',
                     type=float, default=percent_data)
+parser.add_argument('-n660', help='Ignore the 660 discontinuity from being found.', action='store_false')
 args = parser.parse_args()
 
 file_dir = args.file_dir
-find660 = args.find660
+find660 = args.n660
 model_path = args.model_path
 write_path = args.write_path
 relevant_preds = args.N
 eps = args.e
 percent_data = args.p
+
+check_Path_String = lambda x: x+'/' if x[-1] != '/' else x
+file_dir = check_Path_String(file_dir)
+write_path = check_Path_String(write_path)
 
 def cut_Window(cross_sec, times, t_i, t_f):
     init = np.where(times == np.round(t_i, 1))[0][0]
@@ -96,7 +102,7 @@ def find_Precursors(file_dir, cs_file, model, relevant_preds=5):
     time_f_grid = np.arange(begin_time + time_window, end_time + 0.1, 0.1)
     window_preds = np.zeros(len(time_i_grid))
     #window_shifted = np.zeros(len(time_i_grid))
-    print('Predicting...', end=' ')
+    #print('Predicting...', end=' ')
     for i, t_i, t_f in zip(range(len(time_i_grid)), time_i_grid, time_f_grid):
         if t_f > shift:
             break
@@ -109,7 +115,7 @@ def find_Precursors(file_dir, cs_file, model, relevant_preds=5):
         # Ignoring shifted window for now
         #window_shifted[i] += shift_Max(cs, 't6')
     
-    print('Finding arrivals...', end=' ')
+    #print('Finding arrivals...', end=' ')
     dbscan = DBSCAN(eps=0.05, min_samples=2)
     dbscan.fit(window_preds.reshape(-1,1))
     clusters, counts = np.unique(dbscan.labels_, return_counts=True)
@@ -145,8 +151,8 @@ def find_Precursors(file_dir, cs_file, model, relevant_preds=5):
     string_660 = str(arrivals_pos[disc_660]) + ',' + str(arrivals_pos_err[disc_660]) + ',' + str(amp660) + ',' + str(arrivals_quality[disc_660])
     return string_410, string_660
     '''
-    make_string = lambda x: str(arrivals_pos[x]) + ',' + str(arrivals_pos_err[x]) + ',' + str(arrivals_amps[x]) + ',' + str(arrivals_quality[x])
-    result_strings = [make_string(i) for i in range(relevant_preds)]
+    make_string = lambda x: '{},{},{},{}'.format(arrivals_pos[x],arrivals_pos_err[x],arrivals_amps[x],arrivals_quality[x])
+    result_strings = list(map(make_string, range(relevant_preds)))#[make_string(i) for i in range(relevant_preds)]
     return result_strings
 
 def find_410_660(pred_csv_path, eps=eps, percent_data=percent_data):
@@ -285,12 +291,14 @@ def find_410(pred_csv_path, eps=eps, percent_data=percent_data):
                                   '660pred':preds660, '660err':errs660, '660amp':amps660, '660qual':quals660})
     return df_disc
 
-keras.losses.huber_loss = huber_loss
-pos_model = load_model(model_path)
-#neg_model = load_model('../auto_seismo/models/arrival_SS_neg_model_0040.h5')
+pred_model = load_model(model_path)
 n_preds = time_window * resample_Hz # Maximum number of times the peak could be found, from sliding the window
 
-files = np.sort([f.rstrip('.sac') for f in os.listdir(file_dir) if '.sac' in f])
+files = np.sort(os.listdir(file_dir))
+extension = '.{}'.format(files[0].split('.')[-1])
+files = np.sort([f.rstrip(extension) for f in files if extension in f])
+gen_whitespace = lambda x: ' '*len(x)
+pred_time = 0
 
 with open(write_path + file_dir.split('/')[-2] + '_preds.csv', 'w+') as pred_csv:
     '''
@@ -304,16 +312,14 @@ with open(write_path + file_dir.split('/')[-2] + '_preds.csv', 'w+') as pred_csv
     print(header_string, file=pred_csv)
 
 for f, cs_file in enumerate(files):
-    '''
-    print('File', f+1, '/', len(files),'...', end=' ')
-    string_410, string_660 = find_Precursors(file_dir, cs_file+'.sac', pos_model)
-    with open(file_dir.split('/')[-2] + '_preds.csv', 'a') as pred_csv:
-        print(cs_file + ',' + string_410 + ',' + string_660, file=pred_csv)
-    '''
-    print('File', f+1, '/', len(files),'...', end=' ')
-    # Removed and readded the .sac extension due to getting different sorting
-    # of files when leaving the extension in the string
-    results = find_Precursors(file_dir, cs_file+'.sac', pos_model, relevant_preds)
+    #print('File', f+1, '/', len(files),'...', end=' ')
+    print_string = 'File {} / {}... Est. Time per Prediction: {:.2f} sec'.format(f+1, len(files), pred_time)
+    print('\r'+print_string, end=gen_whitespace(print_string))
+    tick = clock()
+    results = find_Precursors(file_dir, cs_file+extension, pred_model, relevant_preds)
+    tock = clock()
+    if f == 0:
+        pred_time = tock-tick
     with open(write_path + file_dir.split('/')[-2] + '_preds.csv', 'a') as pred_csv:
         print(cs_file, end=',', file=pred_csv)
         for i in range(relevant_preds-1):
