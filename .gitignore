@@ -7,3 +7,4 @@ figs/etc/
 autoencoder/data/*
 autoencoder/autoencoder_weights
 pickerlite/models/*
+seyesmolite/models/*/npz/*
