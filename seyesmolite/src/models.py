@@ -92,6 +92,8 @@ class PickingModel(object):
             cut_time = np.zeros((self.number_shift+1, 1))
             for i, n in enumerate(rand_window_shifts):
                 rand_arrival = th_arrival - n * self.window_shift
+                # Maybe change this to be an integer given the sample rate
+                # instead of depending on equivalence of rounded numbers
                 init = np.where(np.round(rand_arrival - self.window_before, 1) == time)[0][0]
                 end = np.where(np.round(rand_arrival + self.window_after, 1) == time)[0][0]
                 time_i = time[init]
@@ -103,8 +105,8 @@ class PickingModel(object):
                 # Normalize by absolute peak, [-1, 1]
                 amp_i = amp_i / np.abs(amp_i).max()
                 seis_windows[i] = amp_i.reshape(self.total_time, 1)
-                arrivals[i] = arrival - time[init]
-                cut_time[i] = time[init]
+                arrivals[i] = arrival - time_i
+                cut_time[i] = time_i
             
             np.savez(self.model_path+'npz/{}'.format(file),
                      seis=seis_windows, arrival=arrivals, cut=cut_time)
@@ -128,9 +130,11 @@ class PickingModel(object):
         arr_array = np.zeros((len(npz_list)*(self.number_shift+1), 1))
         for i, file in enumerate(npz_list):
             npz = np.load(self.model_path+'npz/'+file)
-            for j in range(len(npz['seis'])):
-                seis_array[i+self.number_shift*i+j] = npz['seis'][j]
-                seis_array[i+self.number_shift*i+j] = npz['arrival'][j]
+            seis_array[(self.number_shift+1)*i:(self.number_shift+1)*(i+1)] = npz['seis']
+            arr_array[(self.number_shift+1)*i:(self.number_shift+1)*(i+1)] = npz['arrival']
+            #for j in range(len(npz['seis'])):
+            #    seis_array[self.number_shift*i+j] = npz['seis'][j]
+            #    arr_array[self.number_shift*i+j] = npz['arrival'][j]
         return seis_array, arr_array
     
     def __get_Callbacks(self, epochs):
