@@ -94,8 +94,10 @@ class PickingModel(object):
                 rand_arrival = th_arrival - n * self.window_shift
                 # Maybe change this to be an integer given the sample rate
                 # instead of depending on equivalence of rounded numbers
-                init = np.where(np.round(rand_arrival - self.window_before, 1) == time)[0][0]
-                end = np.where(np.round(rand_arrival + self.window_after, 1) == time)[0][0]
+                #init = np.where(np.round(rand_arrival - self.window_before, 1) == time)[0][0]
+                #end = np.where(np.round(rand_arrival + self.window_after, 1) == time)[0][0]
+                init = int(np.round((rand_arrival - self.window_before)*self.sample_rate))
+                end = int(np.round((rand_arrival + self.window_after)*self.sample_rate))
                 time_i = time[init]
                 time_f = time[end]
                 if not (time_i < arrival < time_f):
