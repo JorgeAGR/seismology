@@ -51,7 +51,7 @@ dbscan.fit(arrivals.reshape(-1,1))
 
 
 
-sigma = 2
+sigma = 3
 '''
 This is to visualize a statistical interpretation of how the predictions will
 be clustered together. Assuming normally distributed clusters of predictions,
@@ -67,27 +67,67 @@ different quality levels. This generates more than the expected number of data
 points, cuasing points to be considered outside of the given confidence level.
 Although, regardless of this they still seem to exist within the entire normal
 distribution at least, which is good.
+
+Ummmm predictions on individual seismograms seem to contradict the above,
+as only 5% of the REMAINING (after quality filtering) data is needed to show
+relevant clustering....
+
+EUREKA! Reasoning is, the percentage part is correct, but for the percent of data
+belonging to THAT distribution. Not others! I wonder is GMMs could solve this...
 '''
+arrivals[arrivals > -130] = 0
 core_points = dbscan.core_sample_indices_
 core0_mu = arrivals[core_points][dbscan.labels_[core_points] == 0].mean()
 core1_mu = arrivals[core_points][dbscan.labels_[core_points] == 1].mean()
 cluster0 = np.where(dbscan.labels_ == 0)
 cluster1 = np.where(dbscan.labels_ == 1)
 arrival_ind_grid = np.arange(len(arrivals))
-x_grid = np.linspace(min(arrivals), max(arrivals), num=200)
+x_grid = np.linspace(min(arrivals), max(arrivals), num=500)
 fig, ax = plt.subplots()
 ax.plot(arrivals, np.arange(len(arrivals)) / len(arrivals), 'k.')
 for c in [cluster0, cluster1]:
-    ax.plot(arrivals[c], arrival_ind_grid[c] / len(arrivals), '.', color='orange')
-ax.plot(arrivals[core_points], arrival_ind_grid[core_points] / len(arrivals), 'r.')
+    ax.plot(arrivals[c], arrival_ind_grid[c] / len(arrivals), '.', color='orange', label='Border Points')
+ax.plot(arrivals[core_points], arrival_ind_grid[core_points] / len(arrivals), 'r.', label='Core Points')
 for mu in [core0_mu, core1_mu]:
     normal = norm.pdf(x_grid, loc=mu, scale=eps/sigma)+0.5
-    ax.plot(x_grid, normal, color='green')
-    ax.axvline(mu-eps, color='green')
-    ax.axvline(mu+eps, color='green')
+    ax.plot(x_grid, normal, color='green', linewidth=2, label=r'Gaussian Dist & 3$\sigma$ cut')
+    ax.axvline(mu-eps, linewidth=2, color='green')
+    ax.axvline(mu+eps, linewidth=2, color='green')
     #ax.fill_betweenx(normal[normal >= twosigma][:-1], np.arange(mu-2*eps,mu+2*eps+1), facecolor='green')
+ax.xaxis.set_major_locator(mtick.MultipleLocator(5))
+ax.xaxis.set_minor_locator(mtick.MultipleLocator(1))
+ax.set_xlabel('Time (s)')
+ax.set_ylabel('Data Point Index')
+ax.set_xlim(-250, -100)
+ax.set_ylim(0, 1)
+ax.legend()
 fig.tight_layout(pad=0.5)
 
+# screw histograms
+core_points = dbscan.core_sample_indices_
+core0_mu = arrivals[core_points][dbscan.labels_[core_points] == 0].mean()
+core1_mu = arrivals[core_points][dbscan.labels_[core_points] == 1].mean()
+cluster0 = np.where(dbscan.labels_ == 0)
+cluster1 = np.where(dbscan.labels_ == 1)
+bins = np.arange(-250, -100, 0.1)
+x_grid = np.linspace(min(arrivals), max(arrivals), num=500)
+fig, ax = plt.subplots()
+counts, _, _ = ax.hist(arrivals, bins, color='black')
+for c in [cluster0, cluster1]:
+    ax.hist(arrivals[c], bins, color='red')
+for mu in [core0_mu, core1_mu]:
+    normal = norm.pdf(x_grid, loc=mu, scale=eps/sigma)
+    ax.plot(x_grid, normal / normal.sum(), color='green', linewidth=2, label=r'Gaussian Dist & 3$\sigma$ cut')
+    #ax.axvline(mu-eps, linewidth=2, color='green')
+    #ax.axvline(mu+eps, linewidth=2, color='green')
+ax.xaxis.set_major_locator(mtick.MultipleLocator(5))
+ax.xaxis.set_minor_locator(mtick.MultipleLocator(1))
+ax.set_xlabel('Time (s)')
+ax.set_ylabel('Data Point Index')
+ax.set_xlim(-250, -100)
+#ax.set_ylim(0, 1)
+ax.legend()
+fig.tight_layout(pad=0.5)
 
 
 clusters, freq = np.unique(dbscan.labels_, return_counts=True)
