@@ -181,7 +181,6 @@ for f, seis_file in enumerate(files):
     except (KeyboardInterrupt, SystemExit):
         raise
     except Exception as exception:
-        raise
         if 'bad.log' not in os.listdir(file_dir + 'picked/'*-(~overwrite)):
             write_Exception(file_dir, f, seis_file, exception, mode='w+')
         else:

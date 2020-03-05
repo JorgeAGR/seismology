@@ -13,4 +13,4 @@
 # Cd into the directory where the script is. Or just add the proper paths to the script and model below
 cd Documents/seismology/pickerlite/
 
-python phase_picker.py ~/Documents/seismograms/scs_test/ ScS models/SS_40_model.h5
+python phase_picker.py -no ~/Documents/seismograms/scs_test/ ScS models/SS_40_model.h5
