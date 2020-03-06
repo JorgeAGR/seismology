@@ -33,11 +33,19 @@ mpl.rcParams['ytick.labelsize'] = 14
 def get_Model_Pred(precursor):
     file_path = 'ss_ind_precursors/S{}S_individual_results.csv'.format(precursor)
     df = pd.read_csv(file_path)
-    latlon = np.zeros((len(df), 2))
-    latlon[:,0] = df['lat']
-    latlon[:,1] = df['lon']
+    latlon_df = pd.read_csv('ss_ind_precursors/SSbouncepoints.dat', sep=' ', header=None)
+    latlon_df.loc[:,0] = [x.rstrip('.s_fil') for x in latlon_df[0].values]
+    #latlon_df[0].values[latlon_df.loc[:,0].isin(df['file'].values)]
+    latlon_df = latlon_df.loc[latlon_df.loc[:,0].isin(df['file'].values),:]
+    # mismatching files, so temp line
+    df = df.loc[df.loc[:,'file'].isin(latlon_df[0].values),:]
+    
+    latlon = latlon_df.values[:,1:]
+    #latlon = np.zeros((len(df), 2))
+    #latlon[:,0] = df['lat']
+    #latlon[:,1] = df['lon']
     keys = df.keys()[3:]
-    return latlon, df[keys[0]].values, df[keys[1]].values, df[keys[3]].values, df['file']
+    return latlon, df[keys[0]].values, df[keys[1]].values, df[keys[3]].values, df['file'].values
 
 def get_MinMax_Times(l_times, m_times):
     min_time = l_times.min()
@@ -77,42 +85,57 @@ for l, lon_0 in enumerate([-180, 0]):
     globe_m.drawparallels([-45, 0, 45])
     globe_m.drawmeridians(np.arange(0.,360.,45.))
     #globe_m.pcolormesh(model_latlon[:,1], model_latlon[:,0], model_times, latlon=True, cmap=cmap)
-    globe_m.scatter(model_latlon[:,1], model_latlon[:,0], c=model_times, s=25,
+    globe_m.scatter(model_latlon[:,1], model_latlon[:,0], c=model_times, s=10,
                     latlon=True, cmap=cmap)#, norm=norm, zorder=10)
     #plt.show()
 fig.tight_layout(pad=0.5)
 fig.savefig('/home/jorgeagr/Downloads/s{}s_realdata_map.png'.format(precursor), dpi=500)
-plt.close()
+#plt.close()
 
 import obspy
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+def get_GCARC_TimeDiff(precursor):
+    # Lazy copy-paste implementation of stuff
+    df = pd.read_csv('ss_ind_precursors/S{}S_individual_results.csv'.format(precursor))    
+    gcarc = np.zeros(len(df['file'].values))
+    time = df['{}pred'.format(precursor)].values
+    for f, file in enumerate(df['file'].values):
+        seis = obspy.read(file_path + file + '.s_fil')[0]
+        # I am aware this is just model_times since model_times is time diff
+        # between precursor and main arrival, seismos are aligned to 0.
+        # just future proofing in case.
+        time[f] = time[f] - seis.stats.sac.t6
+        gcarc[f] = seis.stats.sac.gcarc
+    return time, gcarc, df['{}qual'.format(precursor)].values
+
+
 file_path = '/home/jorgeagr/Documents/seismograms/SS_kept/'
-arrival_prec_diff = np.zeros(len(files))
-gcarc = np.zeros(len(files))
-for f, file in enumerate(files):
-    seis = obspy.read(file_path + file + '.s_fil')[0]
-    # I am aware this is just model_times since model_times is time diff
-    # between precursor and main arrival, seismos are aligned to 0.
-    # just future proofing in case.
-    arrival_prec_diff[f] = model_times[f] - seis.stats.sac.t6
-    gcarc[f] = seis.stats.sac.gcarc
+time410, gcarc410, qual410 = get_GCARC_TimeDiff('410')
+time660, gcarc660, qual660 = get_GCARC_TimeDiff('660')
+qualconcat = np.concatenate([qual410, qual660], axis=0)
+cmin, cmax = qualconcat.min(), qualconcat.max()
+norm = mpl.colors.Normalize(vmin=cmin, vmax=cmax)
 
 fig, ax = plt.subplots()
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="2%", pad=0.05)
 cmap = mpl.cm.Reds
-#norm = mpl.colors.Normalize(vmin=min(model_qual), vmax=max(model_qual))
-#cbar = mpl.colorbar.ColorbarBase(ax, cmap=cmap, norm=norm, orientation='horizontal')
-scat = ax.scatter(gcarc, arrival_prec_diff, 20, c=model_qual, cmap=cmap)
-cbar = fig.colorbar(scat, ax=ax)
+ax.scatter(gcarc410, time410, 10, c=qual410, cmap=cmap)
+ax.scatter(gcarc660, time660, 10, c=qual660, cmap=cmap)
+cbar = mpl.colorbar.ColorbarBase(cax, cmap=cmap, norm=norm, orientation='vertical')
 cbar.set_label('Quality Factor')
-ax.yaxis.set_major_locator(mtick.MultipleLocator(2))
-ax.yaxis.set_minor_locator(mtick.MultipleLocator(1))
+ax.yaxis.set_major_locator(mtick.MultipleLocator(50))
+ax.yaxis.set_minor_locator(mtick.MultipleLocator(10))
 ax.xaxis.set_major_locator(mtick.MultipleLocator(20))
 ax.xaxis.set_minor_locator(mtick.MultipleLocator(10))
-ax.set_ylabel('S{}S-SS (s)'.format(precursor))
+ax.set_ylabel('SdS-SS (s)'.format(precursor))
 ax.set_xlabel('Epicentral Distance (deg)')
-#ax.set_ylim(-164, -148)
+ax.set_ylim(0, -400)
+ax.invert_yaxis()
 #ax.set_xlim(90, 180)
 fig.tight_layout(pad=0.5)
-fig.savefig('/home/jorgeagr/Downloads/s{}s_tdiff_epidist.png'.format(precursor), dpi=250)
+fig.savefig('/home/jorgeagr/Downloads/sds_tdiff_epidist.png'.format(precursor), dpi=250)
 plt.close()
 
 '''
