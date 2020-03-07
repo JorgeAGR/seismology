@@ -1,0 +1,10 @@
+
+Using best model: Model 4
+
+Best Model Results:
+Training Avg Diff: 0.187
+Training Avg Diff Uncertainty: 0.483
+Testing Avg Diff: 0.207
+Testing Avg Diff Uncertainty: 0.802
+Test Loss: 0.056
+Total Training Time: 4.59 hrs

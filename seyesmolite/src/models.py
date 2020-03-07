@@ -6,6 +6,7 @@ Created on Tue Oct  2 15:35:41 2018
 @author: jorgeagr
 """
 import os
+from subprocess import call
 import numpy as np
 from tensorflow.keras.losses import Huber
 from tensorflow.keras.optimizers import Adam
@@ -36,12 +37,15 @@ class PickingModel(object):
         self.window_after = config['window_after']
         self.number_shift = config['number_shift']
         self.window_shift = config['window_shift']
+        try:
+            self.npz_path = config['temp_write_path'] + self.model_name
+        except:
+            self.npz_path = self.model_path
         
         self.total_time = (self.window_before + self.window_after) * self.sample_rate
         
         if self.model_name not in os.listdir('models/'):
-            for directory in [self.model_path, self.model_path+'train_logs/', self.model_path+'npz/']:
-                #list(map(lambda x: x.format(self.model_name), ['models/{}/','models/{}/train_logs/', 'models/{}/npz/'])):
+            for directory in [self.model_path, self.model_path+'train_logs/']:
                 os.mkdir(directory)
         return
     
@@ -52,6 +56,10 @@ class PickingModel(object):
         the data set. Save augmented data set as npy files for quicker loading in
         the future. Meant for training/testing data.
         '''
+        try:
+            os.mkdir(self.npz_path+'npz/')
+        except:
+            pass
         files = np.sort(os.listdir(self.files_path))
         gen_whitespace = lambda x: ' '*len(x)
         
@@ -70,7 +78,10 @@ class PickingModel(object):
             # End time
             e = seismogram.stats.sac['e'] + shift
             # Theoretical onset arrival time + shift
-            th_arrival = seismogram.stats.sac[self.th_arrival_var] + shift
+            if self.th_arrival_var == self.arrival_var:
+                th_arrival = seismogram.stats.sac[self.arrival_var] + shift - np.random.rand() * 20
+            else:
+                th_arrival = seismogram.stats.sac[self.th_arrival_var] + shift
             # Picked maximum arrival time + shift
             arrival = seismogram.stats.sac[self.arrival_var] + shift
             
@@ -110,13 +121,13 @@ class PickingModel(object):
                 arrivals[i] = arrival - time_i
                 cut_time[i] = time_i
             
-            np.savez(self.model_path+'npz/{}'.format(file),
+            np.savez(self.npz_path+'npz/{}'.format(file),
                      seis=seis_windows, arrival=arrivals, cut=cut_time)
             
         return
     
     def __train_test_split(self, idnum, seed=None):
-        npz_files = np.sort(os.listdir('models/{}/npz'.format(self.model_name)))
+        npz_files = np.sort(os.listdir(self.npz_path+'/npz'.format(self.model_name)))
         cutoff = int(len(npz_files) * (1-self.test_split))
         np.random.seed(seed)
         np.random.shuffle(npz_files)
@@ -131,7 +142,7 @@ class PickingModel(object):
         seis_array = np.zeros((len(npz_list)*(self.number_shift+1), self.total_time, 1))
         arr_array = np.zeros((len(npz_list)*(self.number_shift+1), 1))
         for i, file in enumerate(npz_list):
-            npz = np.load(self.model_path+'npz/'+file)
+            npz = np.load(self.npz_path+'npz/'+file)
             seis_array[(self.number_shift+1)*i:(self.number_shift+1)*(i+1)] = npz['seis']
             arr_array[(self.number_shift+1)*i:(self.number_shift+1)*(i+1)] = npz['arrival']
             #for j in range(len(npz['seis'])):
@@ -140,7 +151,7 @@ class PickingModel(object):
         return seis_array, arr_array
     
     def __get_Callbacks(self, epochs):
-        stopper = EarlyStopping(monitor='val_loss', min_delta=0.001, 
+        stopper = EarlyStopping(monitor='val_loss', min_delta=0, #don't want early stop 
                                 patience=epochs//2, restore_best_weights=True)
         # Include Checkpoint? CSVLogger?
         return [stopper,]
@@ -210,21 +221,24 @@ class PickingModel(object):
         tock = clock()
         train_time = (tock-tick)/3600 # hours
         best_model = np.argmin(models_train_means)
-        print('\nUsing best model: Model {}\n'.format(best_model + 1))
-        print('Best Model Results:')
-        print('Training Avg Diff: {:.3f}'.format(models_train_means[best_model]))
-        print('Training Avg Diff Uncertainty: {:.3f}'.format(models_train_stds[best_model]))
-        print('Testing Avg Diff: {:.3f}'.format(models_test_means[best_model]))
-        print('Testing Avg Diff Uncertainty: {:.3f}'.format(models_test_stds[best_model]))
-        print('Test Loss: {:.3f}'.format(models_test_final_loss[best_model]))
-        print('Total Training Time: {:.2f} hrs'.format(train_time))
-        print('\n')
-        if self.debug:
-            print('model saved at this point in no debug')
-            return
+
+        with open(self.model_path + 'train_logs/{}_log.txt'.format(self.model_name), 'w+') as log:
+            print('\nUsing best model: Model {}\n'.format(best_model + 1), file=log)
+            print('Best Model Results:', file=log)
+            print('Training Avg Diff: {:.3f}'.format(models_train_means[best_model]), file=log)
+            print('Training Avg Diff Uncertainty: {:.3f}'.format(models_train_stds[best_model]), file=log)
+            print('Testing Avg Diff: {:.3f}'.format(models_test_means[best_model]), file=log)
+            print('Testing Avg Diff Uncertainty: {:.3f}'.format(models_test_stds[best_model]), file=log)
+            print('Test Loss: {:.3f}'.format(models_test_final_loss[best_model]), file=log)
+            print('Total Training Time: {:.2f} hrs'.format(train_time), file=log)
+            print('\n')
+            if self.debug:
+                print('\nmodel saved at this point in no debug', file=log)
+                return
         self.model = models[best_model]
         np.savez(self.model_path + 'train_logs/{}_train_history'.format(self.model_name),
                 loss=models_train_lpe, val_loss=models_test_lpe, best_model=best_model, train_time=train_time)
+        call(['rm','-r',self.npz_path + 'npz/'])
         return
     
     def load_Model(self, model_file):
