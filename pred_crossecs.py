@@ -30,6 +30,9 @@ percent_data=1
 # User inputs
 '''
 cap_size = 15
+    with open(write_path + file_dir.split('/')[-2] + '_preds.csv', 'a') as pred_csv:
+        print(cs_file, end=',', file=pred_csv)
+        for i in range(relevant_preds-1):
 file_dir = '../seismograms/cross_secs/' + str(cap_size) + 'caps_deg/'
 find660 = True
 model_path = './pickerlite/models/SS_40_model.h5'
@@ -88,12 +91,27 @@ def shift_Max(seis, pred_var):
         #    break
     return arrival
 
-def find_Precursors(file_dir, cs_file, model, relevant_preds=5):
-    cs = obspy.read(file_dir+cs_file)
-    cs_file = cs_file.rstrip('.sac')
+def scan(seis, times, time_i_grid, time_f_grid, shift, model, negative=False):
+    window_preds = np.zeros(len(time_i_grid))
+    for i, t_i, t_f in zip(range(len(time_i_grid)), time_i_grid, time_f_grid):
+        seis_window = cut_Window(seis, times, t_i, t_f) * (-1)**negative
+        seis_window = seis_window / np.abs(seis_window).max()
+        # Take the absolute value of the prediction to remove any wonky behavior in finding the max
+        # Doesn't matter since they are bad predictions anyways
+        window_preds[i] += np.abs(model.predict(seis_window.reshape(1, len(seis_window), 1))[0][0]) + t_i
+    return window_preds
+
+def find_Precursors(file_dir, sac_file, model, relevant_preds=5):
+    cs = obspy.read(file_dir+sac_file+extension)
+    sac_file = sac_file.rstrip(extension)
     cs = cs[0].resample(resample_Hz)
     times = cs.times()
     shift = -cs.stats.sac.b
+    
+    '''
+    add GCARC
+    '''
+    return 0
     
     begin_time = -np.abs(-270) # Seconds before main arrival. Will become an input.
     begin_time = np.round(begin_time + shift, decimals=1)
@@ -103,19 +121,7 @@ def find_Precursors(file_dir, cs_file, model, relevant_preds=5):
     time_i_grid = np.arange(begin_time, end_time - time_window + 0.1, 0.1)
     time_f_grid = np.arange(begin_time + time_window, end_time + 0.1, 0.1)
     window_preds = np.zeros(len(time_i_grid))
-    #window_shifted = np.zeros(len(time_i_grid))
-    #print('Predicting...', end=' ')
-    for i, t_i, t_f in zip(range(len(time_i_grid)), time_i_grid, time_f_grid):
-        if t_f > shift:
-            break
-        cs_window = cut_Window(cs, times, t_i, t_f)
-        cs_window = cs_window / np.abs(cs_window).max()
-        # Take the absolute value of the prediction to remove any wonky behavior in finding the max
-        # Doesn't matter since they are bad predictions anyways
-        cs.stats.sac.t6 = np.abs(model.predict(cs_window.reshape(1, len(cs_window), 1))[0][0]) + t_i
-        window_preds[i] += cs.stats.sac.t6
-        # Ignoring shifted window for now
-        #window_shifted[i] += shift_Max(cs, 't6')
+    window_preds = scan(cs, times, time_i_grid, time_f_grid, shift, model)
     
     #print('Finding arrivals...', end=' ')
     dbscan = DBSCAN(eps=0.05, min_samples=2)
@@ -159,47 +165,36 @@ def find_Precursors(file_dir, cs_file, model, relevant_preds=5):
 
 def prepare_Pred_CSV(discont, discont_ind_list, files, arrivals,
                      arrivals_inds, qualities, errors, amps):
-    '''
-    should include station lat/lon in the _pred.csv files for this part
-    '''
     arrivals = arrivals[discont_ind_list]
     arrivals_inds = arrivals_inds[discont_ind_list]
     qualities = qualities[discont_ind_list]
     errors = errors[discont_ind_list]
     amps = amps[discont_ind_list]
     files = files[arrivals_inds]
-    
-    # temporary. will be included in the _pred.csv in future
-    lat = np.zeros(files.shape)
-    lon = np.zeros(files.shape)
-    for f, file in enumerate(files):
-        seis = obspy.read(file_dir+file+extension)
-        lat[f] = seis[0].stats.sac.stla
-        lon[f] = seis[0].stats.sac.stlo
-    # end temp
+    '''
+    add GCARC? probably not, only need it to figure out good preds.
+    '''
     
     df = pd.DataFrame(data={'file': files,
-                            'lat': lat,
-                            'lon': lon,
                             '{}pred'.format(discont): arrivals,
                             '{}err'.format(discont): errors,
                             '{}amp'.format(discont): amps,
                             '{}qual'.format(discont): qualities})
     return df
-    
 
 def find_410_660(pred_csv_path, qual_cut=0.6, eps=eps, percent_data=percent_data):
     # Might have to update this whole code? If I consider the quality cutoff in the
     # individual scan instead. Might have to even write from scratch in that case.
     # Could still be worth it tho. - 03/03
     df = pd.read_csv(pred_csv_path)
-    pred_inds = np.asarray([1, 5, 9, 13, 17])
+    pred_inds = np.asarray([2, 6, 10, 14, 18])
     err_inds = pred_inds + 1
     amp_inds = err_inds + 1
     qual_inds = amp_inds + 1
     
     files = df['file'].values
     arrivals = df.values[:,pred_inds]#.flatten()
+    gcarcs = df['gcarc'].values
     errors = df.values[:,err_inds]
     amps = df.values[:,amp_inds]
     qualities = df.values[:,qual_inds]
@@ -209,20 +204,29 @@ def find_410_660(pred_csv_path, qual_cut=0.6, eps=eps, percent_data=percent_data
     arrivals[qualities < qual_cut] = 0
     arrivals_inds = np.meshgrid(np.arange(arrivals.shape[1]),
                                np.arange(arrivals.shape[0]))[1]
+    gcarcs = np.meshgrid(np.arange(arrivals.shape[1]), gcarcs)[1]
     arrivals = arrivals.flatten()
     
     arrivals_inds = arrivals_inds.flatten()[arrivals != 0]
+    gcarcs = gcarcs.flatten()[arrivals != 0]
     qualities = qualities.flatten()[arrivals != 0]
     errors = errors.flatten()[arrivals != 0]
     amps = amps.flatten()[arrivals != 0]
     arrivals = arrivals[arrivals != 0]
     
+    '''
+    GCARC is needed. Fix from this point onwards to include it.
+    '''
+    return 0
     # Parameters to play with: eps, min_samples
     percent_data = 0.95
+    eps = 5
     clusters = []
+    clustering_data = np.vstack([arrivals, gcarcs]).T
     while len(clusters) < 2:
         dbscan = DBSCAN(eps=eps, min_samples=len(arrivals)*percent_data)#np.round(len(df)*percent_data))
-        dbscan.fit(arrivals.reshape(-1,1))
+        #dbscan.fit(arrivals.reshape(-1,1))
+        dbscan.fit(clustering_data)
         
         clusters = np.unique(dbscan.labels_)
         if -1 in clusters:
@@ -237,14 +241,19 @@ def find_410_660(pred_csv_path, qual_cut=0.6, eps=eps, percent_data=percent_data
     # number of records where each discont found
     # arrivals[dbscan.labels_ == 0].shape[0]
     
-    arrivals = arrivals[dbscan.core_sample_indices_]
-    arrivals_inds = arrivals_inds[dbscan.core_sample_indices_]
-    errors = errors[dbscan.core_sample_indices_]
-    amps = amps[dbscan.core_sample_indices_]
-    qualities = qualities[dbscan.core_sample_indices_]
+    # Either I incldue all points in the clsuter, or just the core points.
+    # Or perhaps a time cutoff.
+    #index_method = dbscan.core_sample_indices_
+    index_method = np.isin(dbscan.labels_, clusters)
     
-    ind_list_410 = dbscan.labels_[dbscan.core_sample_indices_] == cluster410
-    ind_list_660 = dbscan.labels_[dbscan.core_sample_indices_] == cluster660
+    arrivals = arrivals[index_method]
+    arrivals_inds = arrivals_inds[index_method]
+    errors = errors[index_method]
+    amps = amps[index_method]
+    qualities = qualities[index_method]
+    
+    ind_list_410 = dbscan.labels_[index_method] == cluster410
+    ind_list_660 = dbscan.labels_[index_method] == cluster660
     
     df410 = prepare_Pred_CSV('410', ind_list_410, files,
                              arrivals, arrivals_inds, qualities, errors, amps)
@@ -386,17 +395,17 @@ with open(write_path + file_dir.split('/')[-2] + '_preds.csv', 'w+') as pred_csv
     header_string = header_string.rstrip(',')
     print(header_string, file=pred_csv)
 
-for f, cs_file in enumerate(files):
+for f, sac_file in enumerate(files):
     #print('File', f+1, '/', len(files),'...', end=' ')
     print_string = 'File {} / {}... Est. Time per Prediction: {:.2f} sec'.format(f+1, len(files), pred_time)
     print('\r'+print_string, end=gen_whitespace(print_string))
     tick = clock()
-    results = find_Precursors(file_dir, cs_file+extension, pred_model, relevant_preds)
+    results = find_Precursors(file_dir, sac_file+extension, pred_model, relevant_preds)
     tock = clock()
     if f == 0:
         pred_time = tock-tick
     with open(write_path + file_dir.split('/')[-2] + '_preds.csv', 'a') as pred_csv:
-        print(cs_file, end=',', file=pred_csv)
+        print(sac_file, end=',', file=pred_csv)
         for i in range(relevant_preds-1):
             print(results[i], end=',', file=pred_csv)
         print(results[-1], file=pred_csv)
