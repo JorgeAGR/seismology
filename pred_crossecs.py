@@ -25,7 +25,7 @@ time_window = 40
 relevant_preds = 5
 # For clustering to find 410 and 660
 eps=5
-percent_data=0.99
+percent_data=1
 
 # User inputs
 '''
@@ -61,8 +61,10 @@ file_dir = check_Path_String(file_dir)
 write_path = check_Path_String(write_path)
 
 def cut_Window(cross_sec, times, t_i, t_f):
-    init = np.where(times == np.round(t_i, 1))[0][0]
-    end = np.where(times == np.round(t_f, 1))[0][0]
+    #init = np.where(times == np.round(t_i, 1))[0][0]
+    #end = np.where(times == np.round(t_f, 1))[0][0]
+    init = int(np.round(t_i*resample_Hz))
+    end = int(np.round(t_f*resample_Hz))
     
     return cross_sec[init:end]
 
@@ -155,31 +157,102 @@ def find_Precursors(file_dir, cs_file, model, relevant_preds=5):
     result_strings = list(map(make_string, range(relevant_preds)))#[make_string(i) for i in range(relevant_preds)]
     return result_strings
 
-def find_410_660(pred_csv_path, eps=eps, percent_data=percent_data):
+def prepare_Pred_CSV(discont, discont_ind_list, files, arrivals,
+                     arrivals_inds, qualities, errors, amps):
+    '''
+    should include station lat/lon in the _pred.csv files for this part
+    '''
+    arrivals = arrivals[discont_ind_list]
+    arrivals_inds = arrivals_inds[discont_ind_list]
+    qualities = qualities[discont_ind_list]
+    errors = errors[discont_ind_list]
+    amps = amps[discont_ind_list]
+    files = files[arrivals_inds]
+    
+    # temporary. will be included in the _pred.csv in future
+    lat = np.zeros(files.shape)
+    lon = np.zeros(files.shape)
+    for f, file in enumerate(files):
+        seis = obspy.read(file_dir+file+extension)
+        lat[f] = seis[0].stats.sac.stla
+        lon[f] = seis[0].stats.sac.stlo
+    # end temp
+    
+    df = pd.DataFrame(data={'file': files,
+                            'lat': lat,
+                            'lon': lon,
+                            '{}pred'.format(discont): arrivals,
+                            '{}err'.format(discont): errors,
+                            '{}amp'.format(discont): amps,
+                            '{}qual'.format(discont): qualities})
+    return df
+    
+
+def find_410_660(pred_csv_path, qual_cut=0.6, eps=eps, percent_data=percent_data):
+    # Might have to update this whole code? If I consider the quality cutoff in the
+    # individual scan instead. Might have to even write from scratch in that case.
+    # Could still be worth it tho. - 03/03
     df = pd.read_csv(pred_csv_path)
     pred_inds = np.asarray([1, 5, 9, 13, 17])
     err_inds = pred_inds + 1
     amp_inds = err_inds + 1
     qual_inds = amp_inds + 1
     
-    arrivals = df.values[:,pred_inds].flatten()
+    files = df['file'].values
+    arrivals = df.values[:,pred_inds]#.flatten()
     errors = df.values[:,err_inds]
     amps = df.values[:,amp_inds]
     qualities = df.values[:,qual_inds]
     
-    # Parameters to play with: eps, min_samples
-    dbscan = DBSCAN(eps=eps, min_samples=np.round(len(df)*percent_data))
-    dbscan.fit(arrivals.reshape(-1,1))
+    del df
     
-    clusters = np.unique(dbscan.labels_)
-    if -1 in clusters:
-        clusters = clusters[1:]
+    arrivals[qualities < qual_cut] = 0
+    arrivals_inds = np.meshgrid(np.arange(arrivals.shape[1]),
+                               np.arange(arrivals.shape[0]))[1]
+    arrivals = arrivals.flatten()
+    
+    arrivals_inds = arrivals_inds.flatten()[arrivals != 0]
+    qualities = qualities.flatten()[arrivals != 0]
+    errors = errors.flatten()[arrivals != 0]
+    amps = amps.flatten()[arrivals != 0]
+    arrivals = arrivals[arrivals != 0]
+    
+    # Parameters to play with: eps, min_samples
+    percent_data = 0.95
+    clusters = []
+    while len(clusters) < 2:
+        dbscan = DBSCAN(eps=eps, min_samples=len(arrivals)*percent_data)#np.round(len(df)*percent_data))
+        dbscan.fit(arrivals.reshape(-1,1))
+        
+        clusters = np.unique(dbscan.labels_)
+        if -1 in clusters:
+            clusters = clusters[1:]
+        percent_data += -0.05
+    
     # This part assumes there are only 2 labels, one for each global discontinuity
     # May have to modify clustering part in case less than or more than 2 appear?
     # Purpose is to find corresponding label for each discontinuity
     avg_preds = np.asarray([arrivals[dbscan.labels_ == c].mean() for c in clusters])
-    sort_ind = np.argsort(avg_preds)
-    cluster660, cluster410 = clusters[sort_ind]
+    cluster660, cluster410 = clusters[np.argsort(avg_preds)]
+    # number of records where each discont found
+    # arrivals[dbscan.labels_ == 0].shape[0]
+    
+    arrivals = arrivals[dbscan.core_sample_indices_]
+    arrivals_inds = arrivals_inds[dbscan.core_sample_indices_]
+    errors = errors[dbscan.core_sample_indices_]
+    amps = amps[dbscan.core_sample_indices_]
+    qualities = qualities[dbscan.core_sample_indices_]
+    
+    ind_list_410 = dbscan.labels_[dbscan.core_sample_indices_] == cluster410
+    ind_list_660 = dbscan.labels_[dbscan.core_sample_indices_] == cluster660
+    
+    df410 = prepare_Pred_CSV('410', ind_list_410, files,
+                             arrivals, arrivals_inds, qualities, errors, amps)
+    df660 = prepare_Pred_CSV('660', ind_list_660, files,
+                             arrivals, arrivals_inds, qualities, errors, amps)
+    
+    '''
+    #I think anything below this is incompatible with the new version above
     
     # Reshape into shape of arrivals, to see label for each predicted arrival
     # of each bin
@@ -222,6 +295,8 @@ def find_410_660(pred_csv_path, eps=eps, percent_data=percent_data):
                                   '410pred':preds410, '410err':errs410, '410amp':amps410, '410qual':quals410,
                                   '660pred':preds660, '660err':errs660, '660amp':amps660, '660qual':quals660})
     return df_disc
+    '''
+    return df410, df660
 
 def find_410(pred_csv_path, eps=eps, percent_data=percent_data):
     df = pd.read_csv(pred_csv_path)
@@ -326,8 +401,15 @@ for f, cs_file in enumerate(files):
             print(results[i], end=',', file=pred_csv)
         print(results[-1], file=pred_csv)
 
+# need to incorporate file mergning for multijob approaches before this line
+df410, df660 = find_410_660(write_path + file_dir.split('/')[-2] + '_preds.csv')
+df410.to_csv(write_path + file_dir.split('/')[-2] + '_results.csv', index=False)
+
+'''
+# outdated with new version
 if find660:
     found = find_410_660(write_path + file_dir.split('/')[-2] + '_preds.csv')
 else:
     found = find_410(write_path + file_dir.split('/')[-2] + '_preds.csv')
 found.to_csv(write_path + file_dir.split('/')[-2] + '_results.csv', index=False)
+'''

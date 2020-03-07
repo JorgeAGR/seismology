@@ -41,8 +41,10 @@ from sklearn.cluster import DBSCAN
 from time import time as clock
 
 def cut_Window(cross_sec, times, t_i, t_f):
-    init = np.where(times == np.round(t_i, 1))[0][0]
-    end = np.where(times == np.round(t_f, 1))[0][0]
+    #init = np.where(times == np.round(t_i, 1))[0][0]
+    #end = np.where(times == np.round(t_f, 1))[0][0]
+    init = int(np.round(t_i*resample_Hz))
+    end = int(np.round(t_f*resample_Hz))
     
     return cross_sec[init:end]
 
