@@ -90,7 +90,7 @@ def scan(seis, times, time_i_grid, time_f_grid, shift, model, negative=False):
     return window_preds
 
 def find_Precursors(file_dir, sac_file, model, relevant_preds, pred_init_t, pred_end_t):
-    cs = obspy.read(file_dir+sac_file+extension)
+    cs = obspy.read(file_dir+sac_file)
     sac_file = sac_file.rstrip(extension)
     cs = cs[0].resample(resample_Hz)
     times = cs.times()
