@@ -18,36 +18,20 @@ from tensorflow.keras.models import load_model
 from sklearn.cluster import DBSCAN
 from time import time as clock
 
-resample_Hz = 10
-time_window = 40
-
-# Sort-of global vars. Optional inputs for user
-relevant_preds = 5
-# For clustering to find 410 and 660
-eps=5
-percent_data=1
-
-# User inputs
-'''
-cap_size = 15
-    with open(write_path + file_dir.split('/')[-2] + '_preds.csv', 'a') as pred_csv:
-        print(cs_file, end=',', file=pred_csv)
-        for i in range(relevant_preds-1):
-file_dir = '../seismograms/cross_secs/' + str(cap_size) + 'caps_deg/'
-find660 = True
-model_path = './pickerlite/models/SS_40_model.h5'
-write_path = '.'
-'''
 parser = argparse.ArgumentParser(description='Predict precursor arrivals in vespagram cross-sectional data.')
 parser.add_argument('file_dir', help='Cross-section SAC files directory.', type=str)#, default=file_dir)
 #parser.add_argument('find660', help='Require the 660 discontinuity to be found.', type=bool)
 parser.add_argument('write_path', help='Path to write predicition result CSVs.', type=str)
 parser.add_argument('model_path', help='Path to model H5 file.', type=str)
 parser.add_argument('-N', metavar='relevant_preds', help='Number of top predictions to consider.',
-                    type=int, default=relevant_preds)
-parser.add_argument('-e', metavar='eps', help='Clustering maximum distance from core point.', type=int, default=eps)
+                    type=int, default=5)
+parser.add_argument('-eps', metavar='eps', help='Clustering maximum distance from core point.', type=int, default=5)
 parser.add_argument('-p', metavar='percent_data', help='Percentage of data to define a core point.',
-                    type=float, default=percent_data)
+                    type=float, default=1)
+parser.add_argument('-b', metavar='begin_pred', help='Seconds before main arrival to begin precursor search.',
+                    type=float, default=-400)
+parser.add_argument('-e', metavar='end_pred', help='Seconds before main arrival to end precursor search',
+                    type=float, default=-80)
 parser.add_argument('-n660', help='Ignore the 660 discontinuity from being found.', action='store_false')
 args = parser.parse_args()
 
@@ -56,12 +40,16 @@ find660 = args.n660
 model_path = args.model_path
 write_path = args.write_path
 relevant_preds = args.N
-eps = args.e
+eps = args.eps
 percent_data = args.p
+begin_pred = args.b
+end_pred = args.e
 
 check_Path_String = lambda x: x+'/' if x[-1] != '/' else x
 file_dir = check_Path_String(file_dir)
 write_path = check_Path_String(write_path)
+begin_pred = -np.abs(begin_pred) # Seconds before main arrival.
+end_pred = -np.abs(end_pred) # ditto above
 
 def cut_Window(cross_sec, times, t_i, t_f):
     #init = np.where(times == np.round(t_i, 1))[0][0]
@@ -101,22 +89,15 @@ def scan(seis, times, time_i_grid, time_f_grid, shift, model, negative=False):
         window_preds[i] += np.abs(model.predict(seis_window.reshape(1, len(seis_window), 1))[0][0]) + t_i
     return window_preds
 
-def find_Precursors(file_dir, sac_file, model, relevant_preds=5):
+def find_Precursors(file_dir, sac_file, model, relevant_preds, pred_init_t, pred_end_t):
     cs = obspy.read(file_dir+sac_file+extension)
     sac_file = sac_file.rstrip(extension)
     cs = cs[0].resample(resample_Hz)
     times = cs.times()
     shift = -cs.stats.sac.b
     
-    '''
-    add GCARC
-    '''
-    return 0
-    
-    begin_time = -np.abs(-270) # Seconds before main arrival. Will become an input.
-    begin_time = np.round(begin_time + shift, decimals=1)
-    end_time = -np.abs(-80) # ditto above
-    end_time = np.round(end_time + shift, decimals=1)
+    begin_time = np.round(pred_init_t + shift, decimals=1)
+    end_time = np.round(pred_end_t + shift, decimals=1)
     
     time_i_grid = np.arange(begin_time, end_time - time_window + 0.1, 0.1)
     time_f_grid = np.arange(begin_time + time_window, end_time + 0.1, 0.1)
@@ -130,38 +111,25 @@ def find_Precursors(file_dir, sac_file, model, relevant_preds=5):
     if -1 in clusters:
         clusters = clusters[1:]
         counts = counts[1:]
-    #relevant_preds = 5
+    #relevant_preds = 5e_string(i) for i in range(relevant_preds)]
     discont_ind = np.argsort(counts)[-relevant_preds:]
     clusters = clusters[discont_ind]
     counts = counts[discont_ind]
-    arrivals_pos = np.zeros(relevant_preds)
-    arrivals_pos_err = np.zeros(relevant_preds)
+    arrivals = np.zeros(relevant_preds)
+    arrivals_err = np.zeros(relevant_preds)
     arrivals_amps = np.zeros(relevant_preds)
     arrivals_quality = np.zeros(relevant_preds)
     for i, c in enumerate(clusters):
-        arrivals_pos[i] = np.mean(window_preds[dbscan.labels_ == c])
-        arrivals_pos_err[i] = np.std(window_preds[dbscan.labels_ == c])
+        arrivals[i] = np.mean(window_preds[dbscan.labels_ == c])
+        arrivals_err[i] = np.std(window_preds[dbscan.labels_ == c])
         arrivals_quality[i] = counts[i] / n_preds
-        initamp = np.where(times < arrivals_pos[i])[0][-1]
+        initamp = np.where(times < arrivals[i])[0][-1]
         arrivals_amps[i] = cs.data[initamp:initamp+2].max()
-    arrivals_pos = arrivals_pos - shift
-    '''
-    disc_660, disc_410 = np.argsort(arrivals_pos)
+    arrivals = arrivals - shift
     
-    print('Finding amplitudes...')
-    init410 = np.where(times < arrivals_pos[disc_410])[0][-1]
-    init660 = np.where(times < arrivals_pos[disc_660])[0][-1]
-    amp410 = cs.data[init410:init410+2].max()
-    amp660 = cs.data[init660:init660+2].max()
-    
-    arrivals_pos = arrivals_pos - shift
-    string_410 = str(arrivals_pos[disc_410]) + ',' + str(arrivals_pos_err[disc_410]) + ',' + str(amp410) + ',' + str(arrivals_quality[disc_410])
-    string_660 = str(arrivals_pos[disc_660]) + ',' + str(arrivals_pos_err[disc_660]) + ',' + str(amp660) + ',' + str(arrivals_quality[disc_660])
-    return string_410, string_660
-    '''
-    make_string = lambda x: '{},{},{},{}'.format(arrivals_pos[x],arrivals_pos_err[x],arrivals_amps[x],arrivals_quality[x])
-    result_strings = list(map(make_string, range(relevant_preds)))#[make_string(i) for i in range(relevant_preds)]
-    return result_strings
+    make_string = lambda x: '{},{},{},{}'.format(arrivals[x],arrivals_err[x],arrivals_amps[x],arrivals_quality[x])
+    result_strings = list(map(make_string, range(relevant_preds)))
+    return cs.stats.sac.gcarc, result_strings
 
 def prepare_Pred_CSV(discont, discont_ind_list, files, arrivals,
                      arrivals_inds, qualities, errors, amps):
@@ -375,6 +343,9 @@ def find_410(pred_csv_path, eps=eps, percent_data=percent_data):
                                   '660pred':preds660, '660err':errs660, '660amp':amps660, '660qual':quals660})
     return df_disc
 
+resample_Hz = 10
+time_window = 40
+
 pred_model = load_model(model_path)
 n_preds = time_window * resample_Hz # Maximum number of times the peak could be found, from sliding the window
 
@@ -385,11 +356,8 @@ gen_whitespace = lambda x: ' '*len(x)
 pred_time = 0
 
 with open(write_path + file_dir.split('/')[-2] + '_preds.csv', 'w+') as pred_csv:
-    '''
-    print('file,410pred,410err,410amp,410qual,660pred,660err,660amp,660qual', file=pred_csv)
-    '''
     print_cols = lambda x: 'pred{0},err{0},amp{0},qual{0},'.format(x)
-    header_string = 'file,'
+    header_string = 'file,gcarc,'
     for i in range(relevant_preds):
         header_string += print_cols(i)
     header_string = header_string.rstrip(',')
@@ -400,21 +368,21 @@ for f, sac_file in enumerate(files):
     print_string = 'File {} / {}... Est. Time per Prediction: {:.2f} sec'.format(f+1, len(files), pred_time)
     print('\r'+print_string, end=gen_whitespace(print_string))
     tick = clock()
-    results = find_Precursors(file_dir, sac_file+extension, pred_model, relevant_preds)
+    gcarc, results = find_Precursors(file_dir, sac_file+extension, pred_model, 
+                              relevant_preds, begin_pred, end_pred)
     tock = clock()
     if f == 0:
         pred_time = tock-tick
     with open(write_path + file_dir.split('/')[-2] + '_preds.csv', 'a') as pred_csv:
-        print(sac_file, end=',', file=pred_csv)
+        print('{},{}'.format(sac_file, gcarc), end=',', file=pred_csv)
         for i in range(relevant_preds-1):
             print(results[i], end=',', file=pred_csv)
         print(results[-1], file=pred_csv)
-
+'''
 # need to incorporate file mergning for multijob approaches before this line
 df410, df660 = find_410_660(write_path + file_dir.split('/')[-2] + '_preds.csv')
 df410.to_csv(write_path + file_dir.split('/')[-2] + '_results.csv', index=False)
 
-'''
 # outdated with new version
 if find660:
     found = find_410_660(write_path + file_dir.split('/')[-2] + '_preds.csv')
