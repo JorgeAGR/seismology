@@ -133,8 +133,8 @@ class PickingModel(object):
         return train_npz_list, test_npz_list
     
     def __load_Data(self, npz_list, single=False):
-        seis_array = np.zeros((len(npz_list)*(self.number_shift+1), self.total_time, 1))
-        arr_array = np.zeros((len(npz_list)*(self.number_shift+1), 1))
+        seis_array = np.zeros((len(npz_list)*(self.number_shift+1)**single, self.total_time, 1))
+        arr_array = np.zeros((len(npz_list)*(self.number_shift+1)**single, 1))
         if single:
             for i, file in enumerate(npz_list):
                 npz = np.load(self.npz_path+'npz/'+file)
