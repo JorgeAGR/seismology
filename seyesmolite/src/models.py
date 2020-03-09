@@ -88,11 +88,11 @@ class PickingModel(object):
             # Theoretical arrival may be something unruly, so assign some random
             # shift from the picked arrival
             if not (b < th_arrival < e):
-                th_arrival = arrival - 15 * np.random.rand()
+                th_arrival = arrival - 20 * np.random.rand()
             
             amp = seismogram.data
             time = seismogram.times()
-            # Shifts + 1 because we want a 0th shift + 5 random ones
+            # Shifts + 1 because we want a 0th shift + N random ones
             rand_window_shifts = 2*np.random.rand(self.number_shift+1) - 1 # [-1, 1] interval
             abs_sort = np.argsort(np.abs(rand_window_shifts))
             rand_window_shifts = rand_window_shifts[abs_sort]
@@ -103,23 +103,17 @@ class PickingModel(object):
             cut_time = np.zeros((self.number_shift+1, 1))
             for i, n in enumerate(rand_window_shifts):
                 rand_arrival = th_arrival - n * self.window_shift
-                # Maybe change this to be an integer given the sample rate
-                # instead of depending on equivalence of rounded numbers
-                #init = np.where(np.round(rand_arrival - self.window_before, 1) == time)[0][0]
-                #end = np.where(np.round(rand_arrival + self.window_after, 1) == time)[0][0]
                 init = int(np.round((rand_arrival - self.window_before)*self.sample_rate))
-                end = int(np.round((rand_arrival + self.window_after)*self.sample_rate))
-                time_i = time[init]
-                time_f = time[end]
-                if not (time_i < arrival < time_f):
-                    time_i = arrival - 15 * np.random.rand() - self.window_before
-                    time_f = time_i + self.window_after
+                end = init + self.total_time
+                if not (time[init] < arrival < time[end]):
+                    init = int(np.round((arrival - 15 * np.random.rand() - self.window_before)*self.sample_rate))
+                    end = init + self.total_time
                 amp_i = amp[init:end]
                 # Normalize by absolute peak, [-1, 1]
                 amp_i = amp_i / np.abs(amp_i).max()
                 seis_windows[i] = amp_i.reshape(self.total_time, 1)
-                arrivals[i] = arrival - time_i
-                cut_time[i] = time_i
+                arrivals[i] = arrival - time[init]
+                cut_time[i] = time[init]
             
             np.savez(self.npz_path+'npz/{}'.format(file),
                      seis=seis_windows, arrival=arrivals, cut=cut_time)
@@ -127,7 +121,7 @@ class PickingModel(object):
         return
     
     def __train_test_split(self, idnum, seed=None):
-        npz_files = np.sort(os.listdir(self.npz_path+'/npz'.format(self.model_name)))
+        npz_files = np.sort(os.listdir(self.npz_path+'npz/'.format(self.model_name)))
         cutoff = int(len(npz_files) * (1-self.test_split))
         np.random.seed(seed)
         np.random.shuffle(npz_files)
@@ -138,16 +132,19 @@ class PickingModel(object):
         
         return train_npz_list, test_npz_list
     
-    def __load_Data(self, npz_list):
-        seis_array = np.zeros((len(npz_list)*(self.number_shift+1), self.total_time, 1))
-        arr_array = np.zeros((len(npz_list)*(self.number_shift+1), 1))
-        for i, file in enumerate(npz_list):
-            npz = np.load(self.npz_path+'npz/'+file)
-            seis_array[(self.number_shift+1)*i:(self.number_shift+1)*(i+1)] = npz['seis']
-            arr_array[(self.number_shift+1)*i:(self.number_shift+1)*(i+1)] = npz['arrival']
-            #for j in range(len(npz['seis'])):
-            #    seis_array[self.number_shift*i+j] = npz['seis'][j]
-            #    arr_array[self.number_shift*i+j] = npz['arrival'][j]
+    def __load_Data(self, npz_list, single=False):
+        seis_array = np.zeros((len(npz_list)*(self.number_shift+1)**(not single), self.total_time, 1))
+        arr_array = np.zeros((len(npz_list)*(self.number_shift+1)**(not single), 1))
+        if single:
+            for i, file in enumerate(npz_list):
+                npz = np.load(self.npz_path+'npz/'+file)
+                seis_array[i] = npz['seis'][0]
+                arr_array[i] = npz['arrival'][0]
+        else:
+            for i, file in enumerate(npz_list):
+                npz = np.load(self.npz_path+'npz/'+file)
+                seis_array[(self.number_shift+1)*i:(self.number_shift+1)*(i+1)] = npz['seis']
+                arr_array[(self.number_shift+1)*i:(self.number_shift+1)*(i+1)] = npz['arrival']
         return seis_array, arr_array
     
     def __get_Callbacks(self, epochs):
@@ -181,7 +178,7 @@ class PickingModel(object):
             
             train_files, test_files = self.__train_test_split(m)
             train_x, train_y = self.__load_Data(train_files)
-            test_x, test_y = self.__load_Data(test_files)
+            test_x, test_y = self.__load_Data(test_files, single=True)
             
             train_hist = model.fit(train_x, train_y,
                                    validation_data=(test_x, test_y),
