@@ -31,7 +31,7 @@ parser.add_argument('-p', metavar='percent_data', help='Percentage of data to de
 parser.add_argument('-b', metavar='begin_pred', help='Seconds before main arrival to begin precursor search.',
                     type=float, default=-400)
 parser.add_argument('-e', metavar='end_pred', help='Seconds before main arrival to end precursor search',
-                    type=float, default=-80)
+                    type=float, default=-80) # this should be main_arrival - time_window by default
 parser.add_argument('-n660', help='Ignore the 660 discontinuity from being found.', action='store_false')
 args = parser.parse_args()
 
@@ -96,6 +96,8 @@ def find_Precursors(file_dir, sac_file, model, relevant_preds, pred_init_t, pred
     times = cs.times()
     shift = -cs.stats.sac.b
     
+    if shift < np.abs(pred_init_t):
+        pred_init_t = -shift
     begin_time = np.round(pred_init_t + shift, decimals=1)
     end_time = np.round(pred_end_t + shift, decimals=1)
     
