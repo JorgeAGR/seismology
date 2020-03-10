@@ -152,12 +152,21 @@ def prepare_Pred_CSV(discont, discont_ind_list, files, arrivals,
                             '{}qual'.format(discont): qualities})
     return df
 
+def discontinuity_model(dat_path, precursor, depth, model):
+    df_disc = pd.read_csv('{}{}times_{}_{}.dat'.format(dat_path, precursor, depth, model), sep=' ', header=None)
+    df_main = pd.read_csv('{}SStimes_{}_{}.dat'.format(dat_path, depth, model), sep=' ', header=None)
+    df_disc[1] = (df_disc - df_main)[1]
+
 def find_410_660(pred_csv_path, qual_cut=0.6, eps=eps, percent_data=percent_data):
     # Might have to update this whole code? If I consider the quality cutoff in the
     # individual scan instead. Might have to even write from scratch in that case.
     # Could still be worth it tho. - 03/03
-    df = pd.read_csv(pred_csv_path)
-    pred_inds = np.asarray([2, 6, 10, 14, 18])
+    df = pd.read_csv(pred_csv_path)    
+    preds = 0
+    for key in df.keys():
+        if 'pred' in key:
+            preds += 1
+    pred_inds = np.array([2+4*i for i in range(preds)])
     err_inds = pred_inds + 1
     amp_inds = err_inds + 1
     qual_inds = amp_inds + 1
