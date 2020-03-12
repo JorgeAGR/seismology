@@ -164,4 +164,5 @@ linear.fit(gcarcs.reshape(-1,1),
 ax.plot(x, linear.predict(x.reshape(-1,1)).flatten(), color='orange', linewidth=2, label='Final Fit')
 cax.plot(x, linear.predict(x.reshape(-1,1)).flatten(), color='orange', linewidth=2)
 ax.legend()
+fig.tight_layout(pad=0.5)
 fig.savefig('../clustering_arrivals.png', dpi=200)
