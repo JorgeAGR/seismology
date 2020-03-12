@@ -67,16 +67,17 @@ def get_Predictions(pred_csv_path, file, qual_cut=0.6):
     arrivals_inds = np.meshgrid(np.arange(arrivals.shape[1]),
                                np.arange(arrivals.shape[0]))[1].flatten()
     gcarcs = np.meshgrid(np.arange(arrivals.shape[1]), gcarcs)[1].flatten()
+    files = np.meshgrid(np.arange(arrivals.shape[1]), files)[1].flatten()
     arrivals = arrivals.flatten()
     
-    arrivals_inds, gcarcs, qualities, errors, amps, arrivals = filter_Data(arrivals != 0, arrivals_inds, gcarcs,
-                                                                           qualities, errors, amps, arrivals)
-    arrivals_inds, gcarcs, qualities, errors, amps, arrivals = filter_Data(gcarcs >= 100, arrivals_inds, gcarcs,
-                                                                           qualities, errors, amps, arrivals)
-    arrivals_inds, gcarcs, qualities, errors, amps, arrivals = filter_Data(arrivals > -300, arrivals_inds, gcarcs,
-                                                                           qualities, errors, amps, arrivals)
+    arrivals_inds, gcarcs, qualities, errors, amps, arrivals, files = filter_Data(arrivals != 0, arrivals_inds, gcarcs,
+                                                                           qualities, errors, amps, arrivals, files)
+    arrivals_inds, gcarcs, qualities, errors, amps, arrivals, files = filter_Data(gcarcs >= 100, arrivals_inds, gcarcs,
+                                                                           qualities, errors, amps, arrivals, files)
+    arrivals_inds, gcarcs, qualities, errors, amps, arrivals, files = filter_Data(arrivals > -300, arrivals_inds, gcarcs,
+                                                                           qualities, errors, amps, arrivals, files)
     
-    return gcarcs, arrivals, qualities
+    return gcarcs, arrivals, errors, qualities, files
 
 def discontinuity_model(dat_path, precursor, depth, model):
     df_disc = pd.read_csv('{}S{}Stimes_{}_{}.dat'.format(dat_path, precursor, depth, model), sep=' ', header=None)
@@ -86,11 +87,13 @@ def discontinuity_model(dat_path, precursor, depth, model):
     
     return func
 
-def find_Relevant(arrivals, gcarcs, qualities, init_time, end_time, uncertainty, sigmas, weighted=True):
+def find_Relevant(arrivals, gcarcs, errors, qualities, files, init_time, end_time, uncertainty, sigmas, weighted=True):
     condition = (arrivals < init_time) & (arrivals > end_time)
     arrivals = arrivals[condition]
     gcarcs = gcarcs[condition]
+    errors = errors[condition]
     qualities = qualities[condition]
+    files = files[condition]
     
     percent_data = 1
     eps = 5
@@ -113,13 +116,15 @@ def find_Relevant(arrivals, gcarcs, qualities, init_time, end_time, uncertainty,
     condition = np.abs(zscore) < sigmas
     gcarcs = gcarcs[condition]
     arrivals = arrivals[condition]
+    errors = errors[condition]
     qualities = qualities[condition]
+    files = files[condition]
     
     linear = LinearRegression()
     linear.fit(gcarcs.reshape(-1,1),
                arrivals, sample_weight=qualities**weighted)
     
-    return gcarcs, arrivals, qualities, linear
+    return gcarcs, arrivals, errors, qualities, files, linear
 
 def find_Relevant_OLD(arrivals, gcarcs, qualities, prem_model, iasp_model, uncertainty, sigmas):
     theory = (np.vstack([prem_model(gcarcs), iasp_model(gcarcs)]))
@@ -132,11 +137,11 @@ def find_Relevant_OLD(arrivals, gcarcs, qualities, prem_model, iasp_model, uncer
     gcarcs = gcarcs[condition]
     arrivals = arrivals[condition]
     qualities = qualities[condition]
-    return gcarcs, arrivals, qualities
+    return gcarcs, arrivals, qualities, files
     
 q1 = 0.6
 #q2 = 0.7
-gcarcs, arrivals, qualities = get_Predictions('/home/jorgeagr/Documents/seismology/experimental/ss_ind_precursors/',
+gcarcs, arrivals, errors, qualities, files = get_Predictions('/home/jorgeagr/Documents/seismology/experimental/ss_ind_precursors/',
                             'SS_kept_preds.csv', qual_cut=q1)
 #gcarcs, arrivals, qualities = filter_Data(qualities <= q2, gcarcs, arrivals, qualities)
 
@@ -161,8 +166,10 @@ iasp_520_0 = discontinuity_model('/home/jorgeagr/Documents/seismology/experiment
                                 '520', '0', 'iasp')
 
 # Weighted
-gcarcs410, arrivals410, qualities410, model410 = find_Relevant(arrivals, gcarcs, qualities, -130, -185, 5, 2) 
-gcarcs660, arrivals660, qualities660, model660 = find_Relevant(arrivals, gcarcs, qualities, -200, -250, 5, 2)
+gcarcs410, arrivals410, errors410, qualities410, files410, model410 = find_Relevant(arrivals, gcarcs, errors, qualities, files,
+                                                                          -130, -185, 5, 2) 
+gcarcs660, arrivals660, errors660, qualities660, files660, model660 = find_Relevant(arrivals, gcarcs, errors, qualities, files,
+                                                                          -200, -250, 5, 2)
 #gcarcs520, arrivals520, qualities520 = find_Relevant(arrivals, gcarcs, qualities, prem_520_0, iasp_520_0, 10, 1)
 
 # Unweighted
@@ -180,21 +187,21 @@ fig, ax = plt.subplots()
 #cbar = mpl.colorbar.ColorbarBase(cax, cmap=cmap, norm=norm, orientation='vertical')
 #cbar.set_label('Quality Factor')
 
-ax.scatter(gcarcs, arrivals, marker='.', color='gray')#5, color='gainsboro')
+ax.scatter(gcarcs, arrivals, marker='.', color='black')#5, color='gainsboro')
 #ax.scatter(gcarcs410, arrivals410, 10, c=qualities410, cmap='Reds')
 #ax.scatter(gcarcs660, arrivals660, 10, c=qualities660, cmap='Reds')
 #ax.scatter(gcarcs520, arrivals520, 10, c=qualities520, cmap='Reds')
 
 # Theory Models
-ax.plot(x, prem_410_0(x), color='red', label='PREM')
-ax.plot(x, iasp_410_0(x), '--', color='red', label='IASP')
-ax.plot(x, prem_660_0(x), color='red')
-ax.plot(x, iasp_660_0(x), '--', color='red')
+ax.plot(x, prem_410_0(x), color='red', linewidth=4, label='PREM')
+ax.plot(x, iasp_410_0(x), '--', color='red', linewidth=4, label='IASP')
+ax.plot(x, prem_660_0(x), color='red', linewidth=4)
+ax.plot(x, iasp_660_0(x), '--', color='red', linewidth=4)
 
 # Data Model
 ax.plot(x, model410.predict(x.reshape(-1,1)).flatten(),
-        color='orange', linewidth=2, label='Data Weighted Fit')
-ax.plot(x, model660.predict(x.reshape(-1,1)).flatten(), color='orange', linewidth=2)
+        color='orange', linewidth=4, label='Data Weighted Fit')
+ax.plot(x, model660.predict(x.reshape(-1,1)).flatten(), color='orange', linewidth=4)
 
 # Unweighted models
 #ax.plot(x, model410_uw.predict(x.reshape(-1,1)).flatten(),
@@ -214,3 +221,14 @@ ax.legend()
 #ax.set_title('Qualities {}%-{}%'.format(q1*100, q2*100))
 fig.tight_layout(pad=0.5)
 fig.savefig('../sds_tdiff_epidist.png', dpi=200)#_{}_{}.png'.format(q1*100, q2*100))
+
+df410 = pd.DataFrame(data={'file':files410,
+                           'time': arrivals410,
+                           'error': errors410,
+                           'quality': qualities410})
+df410.to_csv('../../experimental/ss_ind_precursors/S410S_realdata_results.csv', index=False)
+df660 = pd.DataFrame(data={'file': files660,
+                           'time': arrivals660,
+                           'error': errors660,
+                           'quality': qualities660})
+df660.to_csv('../../experimental/ss_ind_precursors/S660S_realdata_results.csv', index=False)

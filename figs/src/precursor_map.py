@@ -39,13 +39,13 @@ parser = argparse.ArgumentParser(description='Model vs Lauren Discontinuity Map'
 parser.add_argument('cap_size', metavar='Cap Size', type=str, default=cap)
 parser.add_argument('discont', metavar='Discontinuity', type=str, default=discontinuity)
 
-args = parser.parse_args()
+args = parser.parse_args(['15', '410'])
 
 discontinuity = args.discont
 cap = args.cap_size
 
 def get_Lauren_Pred(cap, precursor):
-    file_path = 'cross_secs_dat/lauren_pred/' + cap + 'caps_deg.dat'
+    file_path = '../../experimental/cross_secs_dat/lauren_pred/' + cap + 'caps_deg.dat'
     if precursor == '410':
         ind = 1
     elif precursor == '660':
@@ -57,7 +57,7 @@ def get_Lauren_Pred(cap, precursor):
     return dat_bins, dat_times, dat_errors
 
 def get_Model_Pred(cap, precursor):
-    file_path = 'cross_secs_dat/model_pred/' + cap + 'caps_deg_results.csv'
+    file_path = '../../experimental/cross_secs_dat/model_pred/' + cap + 'caps_deg_results.csv'
     df = pd.read_csv(file_path)
     df = df.loc[:, ['file', precursor+'pred', precursor+'err', precursor+'amp', precursor+'qual']]
     
