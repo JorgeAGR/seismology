@@ -31,7 +31,7 @@ parser.add_argument('-p', metavar='percent_data', help='Percentage of data to de
 parser.add_argument('-b', metavar='begin_pred', help='Seconds before main arrival to begin precursor search.',
                     type=float, default=-400)
 parser.add_argument('-e', metavar='end_pred', help='Seconds before main arrival to end precursor search',
-                    type=float, default=-80)
+                    type=float, default=-80) # this should be main_arrival - time_window by default
 parser.add_argument('-n660', help='Ignore the 660 discontinuity from being found.', action='store_false')
 args = parser.parse_args()
 
@@ -96,6 +96,8 @@ def find_Precursors(file_dir, sac_file, model, relevant_preds, pred_init_t, pred
     times = cs.times()
     shift = -cs.stats.sac.b
     
+    if shift < np.abs(pred_init_t):
+        pred_init_t = -shift
     begin_time = np.round(pred_init_t + shift, decimals=1)
     end_time = np.round(pred_end_t + shift, decimals=1)
     
@@ -150,12 +152,21 @@ def prepare_Pred_CSV(discont, discont_ind_list, files, arrivals,
                             '{}qual'.format(discont): qualities})
     return df
 
+def discontinuity_model(dat_path, precursor, depth, model):
+    df_disc = pd.read_csv('{}{}times_{}_{}.dat'.format(dat_path, precursor, depth, model), sep=' ', header=None)
+    df_main = pd.read_csv('{}SStimes_{}_{}.dat'.format(dat_path, depth, model), sep=' ', header=None)
+    df_disc[1] = (df_disc - df_main)[1]
+
 def find_410_660(pred_csv_path, qual_cut=0.6, eps=eps, percent_data=percent_data):
     # Might have to update this whole code? If I consider the quality cutoff in the
     # individual scan instead. Might have to even write from scratch in that case.
     # Could still be worth it tho. - 03/03
-    df = pd.read_csv(pred_csv_path)
-    pred_inds = np.asarray([2, 6, 10, 14, 18])
+    df = pd.read_csv(pred_csv_path)    
+    preds = 0
+    for key in df.keys():
+        if 'pred' in key:
+            preds += 1
+    pred_inds = np.array([2+4*i for i in range(preds)])
     err_inds = pred_inds + 1
     amp_inds = err_inds + 1
     qual_inds = amp_inds + 1

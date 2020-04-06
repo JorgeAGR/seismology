@@ -10,10 +10,7 @@ import numpy as np
 import os
 import obspy
 import numpy as np
-from keras.models import load_model
-import keras.losses
-import keras.metrics
-from tensorflow.losses import huber_loss
+from tensorflow.keras.models import load_model
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
@@ -34,7 +31,7 @@ mpl.rcParams['ytick.major.size'] = 12
 mpl.rcParams['ytick.minor.size'] = 8
 mpl.rcParams['ytick.labelsize'] = 24
 
-directory = '../../seismograms/SS_kept_test/'
+directory = '/home/jorgeagr/Documents/seismograms/SS_kept/'
 dir_name = directory.split('/')[-2] + '/'
 
 seis_files = np.sort(os.listdir(directory))
@@ -44,26 +41,6 @@ file_bad = seis_files[69]
 seismogram = obspy.read(directory+file)[0]
 seismogram_bad = obspy.read(directory+file_bad)[0]
 time = seismogram.times()
-
-def relu(x):
-    return x * (x > 0)
-
-x_grid = np.linspace(-2, 2, num=500)
-figrelu, axrelu = plt.subplots(figsize=(5,5))
-axrelu.plot(x_grid, relu(x_grid), color='black')
-axrelu.xaxis.set_major_locator(mtick.MultipleLocator(1))
-axrelu.xaxis.set_minor_locator(mtick.MultipleLocator(0.2))
-axrelu.yaxis.set_major_locator(mtick.MultipleLocator(1))
-axrelu.yaxis.set_minor_locator(mtick.MultipleLocator(0.2))
-axrelu.spines['top'].set_visible(False)
-axrelu.spines['right'].set_visible(False)
-axrelu.set_xlim(-2, 2)
-axrelu.set_ylim(-0.1, 2)
-axrelu.set_xlabel('x')
-axrelu.set_ylabel('y')
-figrelu.tight_layout()
-#plt.savefig('../figs/4cs/relu.png', dpi=250)
-plt.close()
 
 #num = np.random.randint(0, len(seis_files))
 #seismogram = obspy.read(directory+seis_files[num])[0]
