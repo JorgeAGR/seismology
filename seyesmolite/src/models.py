@@ -64,59 +64,64 @@ class PickingModel(object):
         gen_whitespace = lambda x: ' '*len(x)
         
         for f, file in enumerate(files):
-            file = check_String(file)
-            print_string = 'File ' + str(f+1) + ' / ' + str(len(files)) + '...'
-            print('\r'+print_string, end=gen_whitespace(print_string))
-            
-            seismogram = obspy.read(self.files_path + file)
-            seismogram = seismogram[0].resample(self.sample_rate)
-            # Begging time
-            b = seismogram.stats.sac['b']
-            # The beginning time may not be 0, so shift all attribtues to be so
-            shift = -b
-            b = b + shift
-            # End time
-            e = seismogram.stats.sac['e'] + shift
-            # Theoretical onset arrival time + shift
-            if self.th_arrival_var == self.arrival_var:
-                th_arrival = seismogram.stats.sac[self.arrival_var] + shift - np.random.rand() * 20
+            if file+'npz' in os.listdir(self.npz_path+'npz/'):
+                continue
             else:
-                th_arrival = seismogram.stats.sac[self.th_arrival_var] + shift
-            # Picked maximum arrival time + shift
-            arrival = seismogram.stats.sac[self.arrival_var] + shift
-            
-            # Theoretical arrival may be something unruly, so assign some random
-            # shift from the picked arrival
-            if not (b < th_arrival < e):
-                th_arrival = arrival - 20 * np.random.rand()
-            
-            amp = seismogram.data
-            time = seismogram.times()
-            # Shifts + 1 because we want a 0th shift + N random ones
-            rand_window_shifts = 2*np.random.rand(self.number_shift+1) - 1 # [-1, 1] interval
-            abs_sort = np.argsort(np.abs(rand_window_shifts))
-            rand_window_shifts = rand_window_shifts[abs_sort]
-            rand_window_shifts[0] = 0
-            
-            seis_windows = np.zeros((self.number_shift+1, self.total_time, 1))
-            arrivals = np.zeros((self.number_shift+1, 1))
-            cut_time = np.zeros((self.number_shift+1, 1))
-            for i, n in enumerate(rand_window_shifts):
-                rand_arrival = th_arrival - n * self.window_shift
-                init = int(np.round((rand_arrival - self.window_before)*self.sample_rate))
-                end = init + self.total_time
-                if not (time[init] < arrival < time[end]):
-                    init = int(np.round((arrival - 15 * np.random.rand() - self.window_before)*self.sample_rate))
+                file = check_String(file)
+                print_string = 'File ' + str(f+1) + ' / ' + str(len(files)) + '...'
+                print('\r'+print_string, end=gen_whitespace(print_string))
+                try:
+                    seismogram = obspy.read(self.files_path + file)
+                except:
+                    continue
+                seismogram = seismogram[0].resample(self.sample_rate)
+                # Begging time
+                b = seismogram.stats.sac['b']
+                # The beginning time may not be 0, so shift all attribtues to be so
+                shift = -b
+                b = b + shift
+                # End time
+                e = seismogram.stats.sac['e'] + shift
+                # Theoretical onset arrival time + shift
+                if self.th_arrival_var == self.arrival_var:
+                    th_arrival = seismogram.stats.sac[self.arrival_var] + shift - np.random.rand() * 20
+                else:
+                    th_arrival = seismogram.stats.sac[self.th_arrival_var] + shift
+                # Picked maximum arrival time + shift
+                arrival = seismogram.stats.sac[self.arrival_var] + shift
+                
+                # Theoretical arrival may be something unruly, so assign some random
+                # shift from the picked arrival
+                if not (b < th_arrival < e):
+                    th_arrival = arrival - 20 * np.random.rand()
+                
+                amp = seismogram.data
+                time = seismogram.times()
+                # Shifts + 1 because we want a 0th shift + N random ones
+                rand_window_shifts = 2*np.random.rand(self.number_shift+1) - 1 # [-1, 1] interval
+                abs_sort = np.argsort(np.abs(rand_window_shifts))
+                rand_window_shifts = rand_window_shifts[abs_sort]
+                rand_window_shifts[0] = 0
+                
+                seis_windows = np.zeros((self.number_shift+1, self.total_time, 1))
+                arrivals = np.zeros((self.number_shift+1, 1))
+                cut_time = np.zeros((self.number_shift+1, 1))
+                for i, n in enumerate(rand_window_shifts):
+                    rand_arrival = th_arrival - n * self.window_shift
+                    init = int(np.round((rand_arrival - self.window_before)*self.sample_rate))
                     end = init + self.total_time
-                amp_i = amp[init:end]
-                # Normalize by absolute peak, [-1, 1]
-                amp_i = amp_i / np.abs(amp_i).max()
-                seis_windows[i] = amp_i.reshape(self.total_time, 1)
-                arrivals[i] = arrival - time[init]
-                cut_time[i] = time[init]
-            
-            np.savez(self.npz_path+'npz/{}'.format(file),
-                     seis=seis_windows, arrival=arrivals, cut=cut_time)
+                    if not (time[init] < arrival < time[end]):
+                        init = int(np.round((arrival - 15 * np.random.rand() - self.window_before)*self.sample_rate))
+                        end = init + self.total_time
+                    amp_i = amp[init:end]
+                    # Normalize by absolute peak, [-1, 1]
+                    amp_i = amp_i / np.abs(amp_i).max()
+                    seis_windows[i] = amp_i.reshape(self.total_time, 1)
+                    arrivals[i] = arrival - time[init]
+                    cut_time[i] = time[init]
+                
+                np.savez(self.npz_path+'npz/{}'.format(file),
+                         seis=seis_windows, arrival=arrivals, cut=cut_time)
             
         return
     
