@@ -1,10 +1,10 @@
 
-Using best model: Model 3
+Using best model: Model 1
 
 Best Model Results:
-Training Avg Diff: 0.248
-Training Avg Diff Uncertainty: 0.977
-Testing Avg Diff: 0.257
-Testing Avg Diff Uncertainty: 0.982
-Test Loss: 0.168
-Total Training Time: 2.84 hrs
+Training Avg Diff: 0.128
+Training Avg Diff Uncertainty: 0.291
+Testing Avg Diff: 0.120
+Testing Avg Diff Uncertainty: 0.131
+Test Loss: 0.014
+Total Training Time: 2.90 hrs
