@@ -52,7 +52,7 @@ def get_Lauren_Pred(cap, precursor):
         ind = 4
     df = pd.read_csv(file_path, header=None, sep=' ')
     dat_bins = df[0].values
-    dat_times = np.asarray([line.split('+/-')[0] for line in df[ind].values], dtype=np.float)
+    dat_times = -np.abs(np.asarray([line.split('+/-')[0] for line in df[ind].values], dtype=np.float))
     dat_errors = np.asarray([line.split('+/-')[1] for line in df[ind].values], dtype=np.float)
     return dat_bins, dat_times, dat_errors
 

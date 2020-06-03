@@ -42,9 +42,9 @@ parser.add_argument('-b', '--begin', help='Seconds before theoretical arrival to
                     default=-300)
 parser.add_argument('-e', '--end', help='Seconds before theoretical arrival to end prediction.', type=float,
                     default=-100)
-args = parser.parse_args()#['/home/jorgeagr/Documents/seismograms/SS_kept/',
-                         #'-f20160101A.india.DRLN.BHT.s_fil', '-s', '-nmovie_arrival_neg_pick',
-                         #'-b55', '-e85'])
+args = parser.parse_args(['/home/jorgeagr/Documents/seismograms/SS_kept/',
+                         '20160101A.india.DRLN.BHT.s_fil', '-s', '-nmovie_arrival_still_pick',
+                         '-b40', '-e90'])
 
 file_dir = args.file_dir
 file = args.file
@@ -85,12 +85,12 @@ seismogram = obspy.read(file_dir+file)[0]
 times = seismogram.times()
 time_window = 40
 
-seis = -seismogram.data / np.abs(seismogram.data).max()
+seis = seismogram.data / np.abs(seismogram.data).max()
 shift = -seismogram.stats.sac.b
 begin_time = -np.abs(begin_t)
 begin_time = np.round(begin_time + shift, decimals=1)
 end_time = -np.abs(end_t)
-#end_time = np.abs(end_t)
+end_time = np.abs(end_t)
 end_time = np.round(end_time + shift, decimals=1)
 
 time_i_grid = np.arange(begin_time, end_time - time_window, 0.1)
@@ -102,7 +102,7 @@ times = times - shift
 fig, ax = plt.subplots()#figsize=(15,5))
 ax.set_ylim(-1, 1)  
 ax.set_xlim(times.min(), times.max())
-#ax.set_xlim(-begin_t, end_t)
+ax.set_xlim(-begin_t, end_t)
 ax.set_xlabel('Time (s)')
 ax.set_ylabel('Amplitude')
 ax.xaxis.set_major_locator(mtick.MultipleLocator(50))
@@ -110,9 +110,12 @@ ax.xaxis.set_minor_locator(mtick.MultipleLocator(25))
 ax.yaxis.set_major_locator(mtick.MultipleLocator(0.5))
 ax.yaxis.set_minor_locator(mtick.MultipleLocator(0.25))
 ax.plot(times, seis, color='black')
-win_init = ax.axvline(time_i_grid[0]-shift, color='gray')
+win_init = ax.axvline(time_i_grid[0]-shift, color='gray', label='Window Limit')
 win_end = ax.axvline(time_f_grid[0]-shift, color='gray')
-pred = ax.axvline(window_preds[0]-shift, color='red', linestyle='--')
+y_grid = np.array([-1, 1])
+#win_col = ax.fill_betweenx(y_grid, np.ones_like(y_grid)*(time_i_grid[300]-shift),
+#                           np.ones_like(y_grid)*(time_f_grid[300]-shift), color='whitesmoke')
+pred = ax.axvline(window_preds[0]-shift, color='red', linestyle='--', label='Arrival Prediction')
 fig.tight_layout(pad=0.5)
 def animate(i):
     i = i
@@ -120,7 +123,10 @@ def animate(i):
     win_end.set_xdata(time_f_grid[i]-shift)
     pred.set_xdata(window_preds[i]-shift)
     #return win_init, win_end, pred
-anim = animation.FuncAnimation(fig, animate, interval=1,
-                               frames=window_preds.shape[0], repeat=True)
+#anim = animation.FuncAnimation(fig, animate, interval=1,
+#                               frames=window_preds.shape[0], repeat=True)
+#animate(300)
+#ax.legend()
+#fig.savefig('../{}.eps'.format(name), dpi=200)
 if save:
     anim.save('../{}.mp4'.format(name), writer=animation.FFMpegWriter(fps=60))

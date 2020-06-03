@@ -31,15 +31,20 @@ width = 25
 height = width / golden_ratio
 
 mpl.rcParams['figure.figsize'] = (width, height)
-mpl.rcParams['font.size'] = 20
+mpl.rcParams['font.size'] = 22
 mpl.rcParams['figure.titlesize'] = 'large'
 mpl.rcParams['legend.fontsize'] = 'medium'
-mpl.rcParams['xtick.major.size'] = 12
-mpl.rcParams['xtick.minor.size'] = 8
-mpl.rcParams['xtick.labelsize'] = 18
-mpl.rcParams['ytick.major.size'] = 12
-mpl.rcParams['ytick.minor.size'] = 8
-mpl.rcParams['ytick.labelsize'] = 18
+mpl.rcParams['xtick.major.size'] = 16
+mpl.rcParams['xtick.major.width'] = 2
+mpl.rcParams['xtick.minor.width'] = 2
+mpl.rcParams['xtick.minor.size'] = 12
+mpl.rcParams['xtick.labelsize'] = 36
+mpl.rcParams['ytick.major.size'] = 16
+mpl.rcParams['ytick.major.width'] = 2
+mpl.rcParams['ytick.minor.size'] = 12
+mpl.rcParams['ytick.minor.width'] = 2
+mpl.rcParams['ytick.labelsize'] = 36
+mpl.rcParams['axes.linewidth'] = 2
 
 def filter_Data(condition_array, *arrays):
     new_arrays = []
@@ -131,8 +136,8 @@ ax.yaxis.set_major_locator(mtick.MultipleLocator(50))
 ax.yaxis.set_minor_locator(mtick.MultipleLocator(10))
 ax.xaxis.set_major_locator(mtick.MultipleLocator(20))
 ax.xaxis.set_minor_locator(mtick.MultipleLocator(10))
-ax.set_ylabel('SdS-SS (s)')
-ax.set_xlabel('Epicentral Distance (deg)')
+ax.set_ylabel('SdS-SS (s)', fontsize=36)
+ax.set_xlabel('Epicentral Distance (deg)', fontsize=36)
 ax.invert_yaxis()
 ax.fill_between(x, y-uncertainty*sigmas, y+uncertainty*sigmas, color='lightblue', label='Considered')
 ax.scatter(gcarcs, arrivals, marker='.', color='black')
@@ -165,4 +170,4 @@ ax.plot(x, linear.predict(x.reshape(-1,1)).flatten(), color='orange', linewidth=
 cax.plot(x, linear.predict(x.reshape(-1,1)).flatten(), color='orange', linewidth=2)
 ax.legend()
 fig.tight_layout(pad=0.5)
-fig.savefig('../clustering_arrivals.png', dpi=200)
+fig.savefig('../clustering_arrivals.pdf', dpi=60)

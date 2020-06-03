@@ -10,10 +10,7 @@ import numpy as np
 import os
 import obspy
 import numpy as np
-from keras.models import load_model
-import keras.losses
-import keras.metrics
-from tensorflow.losses import huber_loss
+from tensorflow.keras.models import load_model
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
@@ -59,9 +56,8 @@ def shift_Max(seis, pred_var):
         #    break
     return arrival
 
-keras.losses.huber_loss = huber_loss
-pos_model = load_model('../auto_seismo/models/arrival_SS_pos_model_0040.h5')
-neg_model = load_model('../auto_seismo/models/arrival_SS_neg_model_0040.h5')
+model = 'SS40'
+pos_model = load_model('../seyesmolite/models/{}/{}.h5'.format(model, model))
 time_window = 40
 
 # Picked by Lauren
@@ -75,8 +71,8 @@ time_window = 40
 
 cap = '15'
 file = 'n15_156.50'#'n45_232.87'
-#cs = obspy.read('../../seismograms/cross_secs/'+cap+'caps_deg/'+file+'.sac')
-cs = obspy.read('../../seismograms/SS_kept/19880704A.peru.INU.BHT.s_fil')
+cs = obspy.read('../../seismograms/cross_secs/'+cap+'caps_deg/'+file+'.sac')
+#cs = obspy.read('../../seismograms/SS_kept/19880704A.peru.INU.BHT.s_fil')
 
 cs = cs[0].resample(10)
 times = cs.times()
@@ -103,7 +99,7 @@ for i, t_i, t_f in zip(range(len(time_i_grid)), time_i_grid, time_f_grid):
     window_preds[i] += cs.stats.sac.t6#shift_Max(cs, 't6')
     #window_shifted[i] += shift_Max(cs, 't6')
     #break
-
+'''
 window_negs = np.zeros(len(time_i_grid))
 for i, t_i, t_f in zip(range(len(time_i_grid)), time_i_grid, time_f_grid):
     if t_f > shift:
@@ -115,7 +111,7 @@ for i, t_i, t_f in zip(range(len(time_i_grid)), time_i_grid, time_f_grid):
     cs.stats.sac.t6 = np.abs(pos_model.predict(cs_window.reshape(1, len(cs_window), 1))[0][0]) + t_i
     window_negs[i] += cs.stats.sac.t6#shift_Max(cs, 't6')
     #break
-
+'''
 #arrivals_pos, counts_pos = np.unique(np.round(window_preds, 0), return_counts=True)
 #arrivals_neg, counts_neg = np.unique(np.round(window_negs, 0), return_counts=True)
 #plateus = np.where(np.diff(np.round(window_preds,1)) == 0)[0] + 1
@@ -140,20 +136,20 @@ def cluster_preds(predictions, eps=0.05, min_neighbors=2):
 
 relevant_preds = 8
 arrivals_pos, arrivals_pos_qual = cluster_preds(window_preds)
-arrivals_neg, arrivals_neg_qual = cluster_preds(window_negs)
+#arrivals_neg, arrivals_neg_qual = cluster_preds(window_negs)
 
 # 1
 # arrivals_pos[np.argsort(arrivals_pos_qual)][-relevant_preds:]
 # [np.argsort(arrivals_pos_qual)][-relevant_preds:]
 arrivals_pos_qual = arrivals_pos_qual[arrivals_pos < 2500+shift]
-arrivals_neg_qual = arrivals_neg_qual[arrivals_neg < 2500+shift]
+#arrivals_neg_qual = arrivals_neg_qual[arrivals_neg < 2500+shift]
 arrivals_pos = arrivals_pos[arrivals_pos < 2500+shift]
-arrivals_neg = arrivals_neg[arrivals_neg < 2500+shift]
+#arrivals_neg = arrivals_neg[arrivals_neg < 2500+shift]
 
 arrivals_pos = arrivals_pos[np.argsort(arrivals_pos_qual)][-relevant_preds:]
-arrivals_neg = arrivals_neg[np.argsort(arrivals_neg_qual)][-relevant_preds:]
+#arrivals_neg = arrivals_neg[np.argsort(arrivals_neg_qual)][-relevant_preds:]
 arrivals_pos_qual = arrivals_pos_qual[np.argsort(arrivals_pos_qual)][-relevant_preds:]
-arrivals_neg_qual = arrivals_neg_qual[np.argsort(arrivals_neg_qual)][-relevant_preds:]
+#arrivals_neg_qual = arrivals_neg_qual[np.argsort(arrivals_neg_qual)][-relevant_preds:]
 
 # 2
 '''
@@ -171,6 +167,7 @@ for i, ar_p in enumerate(arrivals_pos):
         else:
             arrivals.append(ar_n)
             arrivals_qual.append(arrivals_neg_qual[i])
+'''
 '''
 keep_pos = []
 keep_neg = []
@@ -197,28 +194,8 @@ arrivals_neg_qual = arrivals_neg_qual[keep_neg]
 
 arrivals = np.hstack([arrivals_pos, arrivals_neg])
 arrivals_qual = np.hstack([arrivals_pos_qual, arrivals_neg_qual])
-
 '''
-# Difference between predictions at t+1 and t
-preds_diff = np.diff(window_preds)
-# Which ones are close 0, to find plateus
-zeros = np.isclose(preds_diff, 0, atol=0.05)
-# Calculate the difference in indeces between the zeros.
-# Where jumps == 1, means they belong in the same plateu
-# Anything larger, that is a jump
-pred_ind = np.arange(0, len(preds_diff), 1)
-pred_ind[~zeros] = 0
-jumps = np.zeros(len(preds_diff))
-jumps[1:] = np.abs(np.diff(pred_ind))
-jumps[jumps == 1] = 1
-jumps[jumps > 1] = 0
 
-fig, ax = plt.subplots()
-ax.plot(time_i_grid[1:], preds_diff)
-ax.plot(time_i_grid[1:][zeros], preds_diff[zeros], '.')
-ax.plot(time_i_grid[1:], jumps)
-ax.set_ylim(-5, 10)
-'''
 times = cs.times() - shift
 fig, ax = plt.subplots()
 ax.plot(time_i_grid-shift, window_preds-shift, '.', color='black')
@@ -238,10 +215,10 @@ for i, ar in enumerate(arrivals_pos[np.argsort(arrivals_pos_qual)][-relevant_pre
     ax.axvline(ar-shift, color='blue', linestyle='--')
     ax.text(ar-shift, 0.1, np.sort(arrivals_pos_qual)[-relevant_preds:][i], rotation=90, fontsize=16)
 ax.axvline(ar-shift, color='blue', linestyle='--', label='positive')
-for i, ar in enumerate(arrivals_neg[np.argsort(arrivals_neg_qual)][-relevant_preds:]):
-   ax.axvline(ar-shift, color='red', linestyle='--')
-   ax.text(ar-shift, 0.1, np.sort(arrivals_neg_qual)[-relevant_preds:][i], rotation=90, fontsize=16)
-ax.axvline(ar-shift, color='red', linestyle='--', label='negative')
+#for i, ar in enumerate(arrivals_neg[np.argsort(arrivals_neg_qual)][-relevant_preds:]):
+#   ax.axvline(ar-shift, color='red', linestyle='--')
+#   ax.text(ar-shift, 0.1, np.sort(arrivals_neg_qual)[-relevant_preds:][i], rotation=90, fontsize=16)
+#ax.axvline(ar-shift, color='red', linestyle='--', label='negative')
 ax.set_ylim(cs_norm.min(), cs_norm.max())
 ax.set_xlim(times.min(), times.max())
 ax.set_xlabel('Time [s]')
@@ -280,35 +257,40 @@ anim.save('sliding_window_crosssec.mp4', writer=animation.FFMpegWriter(fps=120))
 fig, ax = plt.subplots(nrows=2, sharex=True)
 #axes = [plt.subplot2grid((rows2,cols2), (0,0), colspan=rows2, rowspan=rows2//2, fig=fig2),
 #        plt.subplot2grid((rows2,cols2), (rows2//2,0), colspan=rows2, rowspan=rows2//2, fig=fig2)]
-cs_norm = cs.data / np.abs(cs.data).max()
+#cs_norm = cs.data / np.abs(cs.data).max()
 #fig, ax = plt.subplots()
-ax[0].plot(times, cs_norm, color='black')
-for i, ar in enumerate(arrivals_pos[np.argsort(counts_pos)][-2:]):
+cut = 2500
+ax[0].plot(times[:cut], cs.data[:cut] / np.abs(cs.data[:cut]).max(), color='black')
+for i, ar in enumerate(arrivals_pos[np.argsort(arrivals_pos_qual)][-4:]):
     ax[0].axvline(ar-shift, color='blue', linestyle='--')
-    ax[0].text(ar-5-shift, 0.2, np.sort(counts_pos)[-2:][i], rotation=90, fontsize=16)
+    ax[0].text(ar-5-shift, 0.2, np.sort(arrivals_pos_qual)[-4:][i], rotation=90, fontsize=16)
 ax[0].axvline(ar-shift, color='blue', linestyle='--', label='model')
+ax[0].axvline(cut/10 - shift, color='black', linestyle='--')
 #for i, ar in enumerate(arrivals_neg[np.argsort(counts_neg)][-5:]):
 #   ax.axvline(ar, color='red', linestyle='--')
 #   ax.text(ar-5, 0.1, np.sort(counts_neg)[-5:][i], rotation=90, fontsize=16)
 #ax.axvline(ar, color='red', linestyle='--', label='negative model')
+
+ax2 = ax[0].twinx()
+ax2.plot(times[cut:], cs.data[cut:] / np.abs(cs.data[cut:]).max(), color='black')
+ax2.axes.get_yaxis().set_visible(False)
+
 ax[0].set_ylim(-1, 1)
 ax[0].set_xlim(times.min(), times.max())
 ax[1].set_xlabel('Time [s]')
 ax[0].xaxis.set_major_locator(plt.NullLocator())
-ax[0].set_ylabel('Amplitude')
+ax[0].set_ylabel('Relative Amplitude')
 #ax.set_title('5caps_wig/0.087_3.96')
 #ax[0].xaxis.set_minor_locator(mtick.MultipleLocator(10))
 #ax[0].legend(loc='upper right')
 
 #fighist, axhist = plt.subplots()
 ax[1].hist(window_preds-shift, np.arange(begin_time, end_time+0.1, 0.1)-shift, color='black')
-for i, cluster in enumerate(clusters[np.argsort(counts_pos)][-2:]):
-    ax[1].hist((window_preds-shift)[dbscan.labels_ == cluster], np.arange(begin_time, end_time+0.1, 0.1)-shift, color='red')
 ax[1].set_ylabel('Prediction Frequency')
 ax[1].xaxis.set_major_locator(mtick.MultipleLocator(50))
 ax[1].xaxis.set_minor_locator(mtick.MultipleLocator(25))
 fig.tight_layout(pad=1)
 fig.subplots_adjust(wspace=0, hspace=0.1)
-fig.savefig('../figs/cross_sec_pred.png', dpi=250)
-fig.savefig('../figs/cross_sec_pred.svg', dpi=250)
+#fig.savefig('../figs/cross_sec_pred.png', dpi=250)
+#fig.savefig('../figs/cross_sec_pred.svg', dpi=250)
 '''

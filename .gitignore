@@ -8,3 +8,6 @@ autoencoder/data/*
 autoencoder/autoencoder_weights
 pickerlite/models/*.h5
 seyesmolite/models/*/npz/*
+figs/*.pdf
+figs/*.png
+figs/*.eps

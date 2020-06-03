@@ -28,15 +28,20 @@ width = 25
 height = width / golden_ratio
 
 mpl.rcParams['figure.figsize'] = (width, height)
-mpl.rcParams['font.size'] = 20
+mpl.rcParams['font.size'] = 22
 mpl.rcParams['figure.titlesize'] = 'large'
 mpl.rcParams['legend.fontsize'] = 'medium'
-mpl.rcParams['xtick.major.size'] = 12
-mpl.rcParams['xtick.minor.size'] = 8
-mpl.rcParams['xtick.labelsize'] = 18
-mpl.rcParams['ytick.major.size'] = 12
-mpl.rcParams['ytick.minor.size'] = 8
-mpl.rcParams['ytick.labelsize'] = 18
+mpl.rcParams['xtick.major.size'] = 16
+mpl.rcParams['xtick.major.width'] = 2
+mpl.rcParams['xtick.minor.width'] = 2
+mpl.rcParams['xtick.minor.size'] = 12
+mpl.rcParams['xtick.labelsize'] = 36
+mpl.rcParams['ytick.major.size'] = 16
+mpl.rcParams['ytick.major.width'] = 2
+mpl.rcParams['ytick.minor.size'] = 12
+mpl.rcParams['ytick.minor.width'] = 2
+mpl.rcParams['ytick.labelsize'] = 36
+mpl.rcParams['axes.linewidth'] = 2
 
 def filter_Data(condition_array, *arrays):
     new_arrays = []
@@ -77,7 +82,7 @@ def get_Predictions(pred_csv_path, file, qual_cut=0.6):
     arrivals_inds, gcarcs, qualities, errors, amps, arrivals, files = filter_Data(arrivals > -300, arrivals_inds, gcarcs,
                                                                            qualities, errors, amps, arrivals, files)
     
-    return gcarcs, arrivals, errors, qualities, files
+    return gcarcs, arrivals, errors, qualities, amps, files
 
 def discontinuity_model(dat_path, precursor, depth, model):
     df_disc = pd.read_csv('{}S{}Stimes_{}_{}.dat'.format(dat_path, precursor, depth, model), sep=' ', header=None)
@@ -107,6 +112,38 @@ def find_Relevant(arrivals, gcarcs, errors, qualities, files, init_time, end_tim
         clusters = np.unique(dbscan.labels_)
         if -1 in clusters:
             clusters = clusters[1:]
+    '''
+    gcarcs_n = gcarcs
+    arrivals_n = arrivals
+    errors_n = errors
+    qualities_n = qualities
+    files_n = files
+    old_total = 0
+    new_total = len(arrivals)
+    init_fit = 0
+    while old_total - new_total != 0:
+        old_total = len(arrivals)
+        if init_fit==0:
+            linear = LinearRegression()
+            linear.fit(gcarcs[dbscan.labels_==0].reshape(-1,1),
+                       arrivals[dbscan.labels_==0], sample_weight=(qualities[dbscan.labels_==0])**weighted)
+            arrive_linear = linear.predict(gcarcs.reshape(-1,1)).flatten()
+            init_fit = 1
+        else:
+            linear = LinearRegression()
+            linear.fit(gcarcs_n.reshape(-1,1),
+                       arrivals_n, sample_weight=(qualities_n)**weighted)
+            arrive_linear = linear.predict(gcarcs.reshape(-1,1)).flatten()
+        
+        zscore = (arrivals - arrive_linear) / uncertainty
+        condition = np.abs(zscore) < sigmas
+        gcarcs_n = gcarcs[condition]
+        arrivals_n = arrivals[condition]
+        errors_n = errors[condition]
+        qualities_n = qualities[condition]
+        files_n = files[condition]
+        new_total = len(arrivals)
+    '''
     linear = LinearRegression()
     linear.fit(gcarcs[dbscan.labels_==0].reshape(-1,1),
                arrivals[dbscan.labels_==0], sample_weight=(qualities[dbscan.labels_==0])**weighted)
@@ -123,7 +160,7 @@ def find_Relevant(arrivals, gcarcs, errors, qualities, files, init_time, end_tim
     linear = LinearRegression()
     linear.fit(gcarcs.reshape(-1,1),
                arrivals, sample_weight=qualities**weighted)
-    
+    #return gcarcs_n, arrivals_n, errors_n, qualities_n, files_n, linear
     return gcarcs, arrivals, errors, qualities, files, linear
 
 def find_Relevant_OLD(arrivals, gcarcs, qualities, prem_model, iasp_model, uncertainty, sigmas):
@@ -141,8 +178,9 @@ def find_Relevant_OLD(arrivals, gcarcs, qualities, prem_model, iasp_model, uncer
     
 q1 = 0.6
 #q2 = 0.7
-gcarcs, arrivals, errors, qualities, files = get_Predictions('/home/jorgeagr/Documents/seismology/experimental/ss_ind_precursors/',
-                            'SS_kept_preds.csv', qual_cut=q1)
+file = 'corrected'
+gcarcs, arrivals, errors, qualities, amplitudes, files = get_Predictions('/home/jorgeagr/Documents/seismology/experimental/ss_ind_precursors/',
+                            'SS_{}_preds.csv'.format(file), qual_cut=q1)
 #gcarcs, arrivals, qualities = filter_Data(qualities <= q2, gcarcs, arrivals, qualities)
 
 # 410 models
@@ -176,59 +214,140 @@ gcarcs660, arrivals660, errors660, qualities660, files660, model660 = find_Relev
 #_, _, _, model410_uw = find_Relevant(arrivals, gcarcs, qualities, -130, -185, 5, 2, weighted=False)
 #_, _, _, model660_uw = find_Relevant(arrivals, gcarcs, qualities, -200, -250, 5, 2, weighted=False)
 
-cmin, cmax = qualities.min(), qualities.max()
-norm = mpl.colors.Normalize(vmin=cmin, vmax=1)
-cmap = mpl.cm.Reds
-
 x = np.linspace(100, 180, num=100)
 fig, ax = plt.subplots()
-#divider = make_axes_locatable(ax)
-#cax = divider.append_axes("right", size="2%", pad=0.05)
-#cbar = mpl.colorbar.ColorbarBase(cax, cmap=cmap, norm=norm, orientation='vertical')
-#cbar.set_label('Quality Factor')
-
-ax.scatter(gcarcs, arrivals, marker='.', color='black')#5, color='gainsboro')
-#ax.scatter(gcarcs410, arrivals410, 10, c=qualities410, cmap='Reds')
-#ax.scatter(gcarcs660, arrivals660, 10, c=qualities660, cmap='Reds')
-#ax.scatter(gcarcs520, arrivals520, 10, c=qualities520, cmap='Reds')
+color = 0
+if color:
+    grad = amplitudes
+    grad_name = 'Amplitude'
+    cmin, cmax = grad.min(), grad.max()
+    norm = mpl.colors.Normalize(vmin=cmin, vmax=cmax)
+    cmap = mpl.cm.hot_r
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="2%", pad=0.05)
+    cbar = mpl.colorbar.ColorbarBase(cax, cmap=cmap, norm=norm, orientation='vertical')
+    cbar.set_label(grad_name)
+    ax.scatter(gcarcs[np.argsort(grad)], arrivals[np.argsort(grad)], marker='.', c=grad, cmap=cmap, norm=norm)
+else:
+    ax.scatter(gcarcs, arrivals, marker='.', color='black')#5, color='gainsboro')
 
 # Theory Models
-ax.plot(x, prem_410_0(x), color='red', linewidth=4, label='PREM')
-ax.plot(x, iasp_410_0(x), '--', color='red', linewidth=4, label='IASP')
-ax.plot(x, prem_660_0(x), color='red', linewidth=4)
-ax.plot(x, iasp_660_0(x), '--', color='red', linewidth=4)
-
-# Data Model
-ax.plot(x, model410.predict(x.reshape(-1,1)).flatten(),
-        color='orange', linewidth=4, label='Data Weighted Fit')
-ax.plot(x, model660.predict(x.reshape(-1,1)).flatten(), color='orange', linewidth=4)
+if not color:
+    ax.plot(x, prem_410_0(x), color='red', linewidth=4, label='PREM')
+    ax.plot(x, iasp_410_0(x), '--', color='red', linewidth=4, label='IASP')
+    ax.plot(x, prem_660_0(x), color='red', linewidth=4)
+    ax.plot(x, iasp_660_0(x), '--', color='red', linewidth=4)
+    
+    # Data Model
+    ax.plot(x, model410.predict(x.reshape(-1,1)).flatten(),
+            color='orange', linewidth=4, label='Data Weighted Fit')
+    ax.plot(x, model660.predict(x.reshape(-1,1)).flatten(), color='orange', linewidth=4)
 
 # Unweighted models
 #ax.plot(x, model410_uw.predict(x.reshape(-1,1)).flatten(),
 #        color='green', linewidth=2, label='Data Unweighted Fit')
 #ax.plot(x, model660_uw.predict(x.reshape(-1,1)).flatten(), color='green', linewidth=2)
 
-ax.set_xlim(90, 180)
+ax.set_xlim(100, 180)
 ax.set_ylim(-100, -300)
 ax.yaxis.set_major_locator(mtick.MultipleLocator(50))
 ax.yaxis.set_minor_locator(mtick.MultipleLocator(10))
 ax.xaxis.set_major_locator(mtick.MultipleLocator(20))
 ax.xaxis.set_minor_locator(mtick.MultipleLocator(10))
-ax.set_ylabel('SdS-SS (s)')
-ax.set_xlabel('Epicentral Distance (deg)')
+ax.set_ylabel('SdS-SS (s)', fontsize=36)
+ax.set_xlabel('Epicentral Distance (deg)', fontsize=36)
 ax.invert_yaxis()
-ax.legend()
+if not color:
+    ax.legend()
 #ax.set_title('Qualities {}%-{}%'.format(q1*100, q2*100))
 fig.tight_layout(pad=0.5)
-fig.savefig('../sds_tdiff_epidist.png', dpi=200)#_{}_{}.png'.format(q1*100, q2*100))
+if color:
+    fig.savefig('../{}_preds_{}.pdf'.format(file, grad_name), dpi=60)
+else:
+    fig.savefig('../{}_preds.pdf'.format(file), dpi=60)
 
 df410 = pd.DataFrame(data={'file':files410,
                            'time': arrivals410,
                            'error': errors410,
                            'quality': qualities410})
-df410.to_csv('../../experimental/ss_ind_precursors/S410S_realdata_results.csv', index=False)
+#df410.to_csv('../../experimental/ss_ind_precursors/S410S_{}_results.csv'.format(file), index=False)
 df660 = pd.DataFrame(data={'file': files660,
                            'time': arrivals660,
                            'error': errors660,
                            'quality': qualities660})
-df660.to_csv('../../experimental/ss_ind_precursors/S660S_realdata_results.csv', index=False)
+#df660.to_csv('../../experimental/ss_ind_precursors/S660S_{}_results.csv'.format(file), index=False)
+'''
+g_i = 120
+g_f = g_i + 10
+seis_total = np.unique(files[(g_i < gcarcs) & (gcarcs < g_f)]).shape[0]
+seis_410 = np.unique(files410[(g_i < gcarcs410) & (gcarcs410 < g_f)]).shape[0]
+seis_660 = np.unique(files660[(g_i < gcarcs660) & (gcarcs660 < g_f)]).shape[0]
+fig, ax = plt.subplots()
+ax.set_xlim(-300, -100)
+freq, _, _ = ax.hist(arrivals[(g_i < gcarcs) & (gcarcs < g_f)], np.arange(-300, -100, 1), color='tab:blue')
+freq410, _, _ = ax.hist(arrivals410[(g_i < gcarcs410) & (gcarcs410 < g_f)], np.arange(-300, -100, 1), color='tab:blue')
+freq660, _, _ = ax.hist(arrivals660[(g_i < gcarcs660) & (gcarcs660 < g_f)], np.arange(-300, -100, 1), color='tab:blue')
+ax.text(model410.predict(np.array([[g_i + 5]]))[0]-10, freq410.max()+0.5, '410-km Cluster: {:.2f}'.format(seis_410/seis_total))
+ax.text(model660.predict(np.array([[g_i + 5]]))[0]-10, freq660.max()+0.5, '660-km Cluster: {:.2f}'.format(seis_660/seis_total))
+ax.set_title('CNN: {} to {} deg / >{} Quality / {} Seismograms'.format(g_i, g_f, q1, seis_total))
+#ax.yaxis.set_major_locator(mtick.MultipleLocator(50))
+#ax.yaxis.set_minor_locator(mtick.MultipleLocator(10))
+ax.xaxis.set_major_locator(mtick.MultipleLocator(50))
+ax.xaxis.set_minor_locator(mtick.MultipleLocator(10))
+ax.set_xlabel('SdS-SS (s)')
+ax.set_ylabel('Frequency')
+fig.tight_layout(pad=0.5)
+fig.savefig('../precursor_{}_{}hist_{}.pdf'.format(file, g_i, q1), dpi=200)
+'''
+'''
+dfboth = pd.merge(df410, df660, how='inner', on=['file'])
+bin = 2.5
+t, ep = np.meshgrid(np.arange(0, 497.3, 0.1), np.arange(100, 180-bin, bin))
+amp = np.zeros(t.shape)
+ar = np.zeros((len(amp), 2))
+er = np.zeros(ar.shape)
+for i in range(ep.shape[0]):
+    q = 0.9
+    while (amp[i] == np.zeros_like(len(amp[i]))).sum() == len(amp[i]):
+        for f in dfboth[((dfboth['quality_x'] > q) & (dfboth['quality_y'] > q))].sort_values('quality_y', ascending=False)['file'].values:
+            if ep[i,0] < gcarcs[files == f][0] < ep[i,0]+bin:
+                seis = obspy.read('/home/jorgeagr/Documents/seismograms/SS_corrected/{}.s_fil'.format(f))[0].resample(10)
+                print(gcarcs[files == f][0], dfboth[dfboth.file == f].quality_x.values[0], dfboth[dfboth.file == f].quality_y.values[0])
+                amp[i] = seis.data[:4973]
+                ar[i,0] = dfboth[dfboth.file == f].time_x.values[0]
+                ar[i,1] = dfboth[dfboth.file == f].time_y.values[0]
+                er[i,0] = dfboth[dfboth.file == f].error_x.values[0]
+                er[i,1] = dfboth[dfboth.file == f].error_y.values[0]
+                break
+        q += -0.05
+        if q <= 0.6:
+            break
+fig, ax = plt.subplots(figsize=(7,15))
+init = 1000
+cut = 3500
+ax.axvline(cut/10 + seis.stats.sac.b, color='black', linestyle='--')
+ax.set_ylim(98, 177)
+ax2 = ax.twinx()
+ax2.set_ylim(98, 177)
+ax.set_xlim(-300,seis.stats.sac.e)
+ax2.set_xlim(-300,seis.stats.sac.e)
+for i in range(ep.shape[0]):
+    mina = np.abs(amp[i,init:cut]).min()
+    maxa = np.abs(amp[i,init:cut]).max()
+    ax.plot(t[i,init:cut]+seis.stats.sac.b, amp[i,init:cut]/maxa+ep[i,0], color='black')
+    for j in range(2):
+        y_grid = np.array([ep[i,j] - bin/2, ep[i,j] + bin/2])
+        ax.fill_betweenx(y_grid, ar[i,j] - er[i,j]*2, ar[i,j] + er[i,j]*2, color='red')
+    #ax.axvline(ar[i,0], (ep[i,0]-2.5 - 99)/(176-99), (ep[i,0]+2.5 - 99)/(176-99), color='red')
+    #ax.axvline(ar[i,1], ep[i,0]-1, ep[i,0]+1)
+    ax2.plot(t[i,cut:]+seis.stats.sac.b, amp[i,cut:]/np.abs(amp[i,cut:]).max()+ep[i,0], color='black')
+ax2.axes.get_yaxis().set_visible(False)    
+ax.set_xlabel('Time (s)')
+ax.set_ylabel('Epicentral Distance (deg)')
+ax.yaxis.set_major_locator(mtick.MultipleLocator(10))
+ax.yaxis.set_minor_locator(mtick.MultipleLocator(5))
+ax.xaxis.set_major_locator(mtick.MultipleLocator(100))
+ax.xaxis.set_minor_locator(mtick.MultipleLocator(50))
+fig.tight_layout(pad=0.5)
+fig.savefig('../seis_corrected_preds.pdf', dpi=200)
+'''

@@ -225,7 +225,7 @@ class PickingModel(object):
         best_model = np.argmin(models_train_means)
 
         with open(self.model_path + 'train_logs/{}_log.txt'.format(self.model_name), 'w+') as log:
-            print('\nUsing best model: Model {}\n'.format(best_model + 1), file=log)
+            print('\nUsing best model: Model {}\n'.format(best_model), file=log)
             print('Best Model Results:', file=log)
             print('Training Avg Diff: {:.3f}'.format(models_train_means[best_model]), file=log)
             print('Training Avg Diff Uncertainty: {:.3f}'.format(models_train_stds[best_model]), file=log)

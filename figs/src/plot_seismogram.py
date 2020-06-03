@@ -20,15 +20,20 @@ width = 25
 height = 5
 
 mpl.rcParams['figure.figsize'] = (width, height)
-mpl.rcParams['font.size'] = 20
+mpl.rcParams['font.size'] = 22
 mpl.rcParams['figure.titlesize'] = 'large'
 mpl.rcParams['legend.fontsize'] = 'medium'
-mpl.rcParams['xtick.major.size'] = 12
-mpl.rcParams['xtick.minor.size'] = 8
-mpl.rcParams['xtick.labelsize'] = 16
-mpl.rcParams['ytick.major.size'] = 12
-mpl.rcParams['ytick.minor.size'] = 8
-mpl.rcParams['ytick.labelsize'] = 16
+mpl.rcParams['xtick.major.size'] = 16
+mpl.rcParams['xtick.major.width'] = 2
+mpl.rcParams['xtick.minor.width'] = 2
+mpl.rcParams['xtick.minor.size'] = 12
+mpl.rcParams['xtick.labelsize'] = 36
+mpl.rcParams['ytick.major.size'] = 16
+mpl.rcParams['ytick.major.width'] = 2
+mpl.rcParams['ytick.minor.size'] = 12
+mpl.rcParams['ytick.minor.width'] = 2
+mpl.rcParams['ytick.labelsize'] = 36
+mpl.rcParams['axes.linewidth'] = 2
 
 parser = argparse.ArgumentParser(description='Plot a seismogram in a file directory. Plots the first seismogram in the directory by default.')
 parser.add_argument('file_dir', help='SAC files directory.', type=str)
@@ -71,8 +76,8 @@ ax.set_ylim(-1, 1)
 ax.xaxis.set_minor_locator(mtick.MultipleLocator(10))
 ax.yaxis.set_major_locator(mtick.MultipleLocator(0.5))
 ax.yaxis.set_minor_locator(mtick.MultipleLocator(0.25))
-ax.set_xlabel('Time (s)')
-ax.set_ylabel('Amplitude')
+ax.set_xlabel('Time (s)', fontsize=36)
+ax.set_ylabel('Amplitude', fontsize=36)
 fig.tight_layout()
 if save:
     fig.savefig('../{}.{}'.format(name, save), dpi=250)
