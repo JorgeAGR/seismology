@@ -39,6 +39,9 @@ for f in files:
     results[f] = (auto, qual)
     
 with open('{}../{}_picks.csv'.format(file_dir, file_dir.split('/')[-2]), 'w+') as csv:
-    print('file,handpick,autopick,quality', file=csv)
+    print('file,prediction,quality', file=csv)
     for key in results:
+        name = key.rstrip(ext)
+        if '_auto' in name:
+            name = name.rstrip('_auto')
         print('{},{:.2f},{:.2f}'.format(key, results[key][0], results[key][1]), file=csv)
