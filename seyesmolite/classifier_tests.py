@@ -303,3 +303,5 @@ class SortingModel(object):
                   optimizer=Adam(1e-4))
         
         return model
+    
+model = SortingModel('class')
