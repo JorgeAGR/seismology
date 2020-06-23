@@ -373,7 +373,8 @@ class SortingModel(object):
                     rand_arrival = th_arrival - n * self.window_shift
                     init = int(np.round((rand_arrival - self.window_before)*self.sample_rate))
                     end = init + self.total_time
-                    #if not (time[init] < arrival < time[end]):
+                    if (end-init < self.total_time):
+                        init = init - (self.total_time - (end-init))
                     #    init = int(np.round((arrival - 15 * np.random.rand() - self.window_before)*self.sample_rate))
                     #    end = init + self.total_time
                     amp_i = amp[init:end]
