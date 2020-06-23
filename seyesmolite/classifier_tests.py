@@ -14,10 +14,10 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.layers import Dense, Flatten, Conv1D, MaxPooling1D, BatchNormalization, Input, UpSampling1D, Reshape
 from tensorflow.keras.models import Model, Sequential
 from tensorflow.keras.callbacks import CSVLogger, EarlyStopping, ModelCheckpoint
+from tensorflow.keras.utils import Sequence
 from time import time as clock
 import obspy
 from src.aux_funcs import check_String, read_Config
-from tensorflow.keras.utils import Sequence, to_categorical
 
 class SortingModel(object):
     
@@ -194,8 +194,10 @@ class SortingModel(object):
                                    callbacks=callbacks)
             '''
             
-            train_generator = SortingDataGenerator(self.npz_path, train_files, self.total_points)
-            test_generator = SortingDataGenerator(self.npz_path, test_files, self.total_points)
+            train_generator = SortingDataGenerator(self.npz_path, train_files,
+                                                   self.total_points, batch_size=self.batch_size)
+            test_generator = SortingDataGenerator(self.npz_path, test_files, self.total_points,
+                                                  batch_size=self.batch_size)
             
             train_hist = model.fit(train_generator,
                                     validation_data=test_generator,
@@ -326,7 +328,7 @@ class SortingModel(object):
     
 class SortingDataGenerator(Sequence):
     '''
-    Based on the implementation by Shervine Amidi
+    Based on an implementation by Shervine Amidi
     https://stanford.edu/~shervine/blog/keras-how-to-generate-data-on-the-fly
     '''
     'Generates data for Keras'
