@@ -296,6 +296,7 @@ class SortingModel(object):
         self.files_path = list(map(lambda x: x+'/' if (x[-1] != '/') else x, [config['files_path'],]))[0]
         self.sample_rate = config['sample_rate']
         self.th_arrival_var = config['theory_arrival_var']
+        self.compression_size = config['compression_size']
         self.arrival_var = config['pick_arrival_var']
         self.window_before = config['window_before']
         self.window_after = config['window_after']
@@ -372,9 +373,9 @@ class SortingModel(object):
                     rand_arrival = th_arrival - n * self.window_shift
                     init = int(np.round((rand_arrival - self.window_before)*self.sample_rate))
                     end = init + self.total_time
-                    if not (time[init] < arrival < time[end]):
-                        init = int(np.round((arrival - 15 * np.random.rand() - self.window_before)*self.sample_rate))
-                        end = init + self.total_time
+                    #if not (time[init] < arrival < time[end]):
+                    #    init = int(np.round((arrival - 15 * np.random.rand() - self.window_before)*self.sample_rate))
+                    #    end = init + self.total_time
                     amp_i = amp[init:end]
                     # Normalize by absolute peak, [-1, 1]
                     amp_i = amp_i / np.abs(amp_i).max()
@@ -436,7 +437,7 @@ class SortingModel(object):
         tick = clock()
         for m in range(self.model_iters):        
             print('Training arrival prediction model', m+1)
-            model = self.__rossNetAE(1250)
+            model = self.__rossNetAE(self.compression_size)
             
             callbacks = self.__get_Callbacks(self.epochs)
             
