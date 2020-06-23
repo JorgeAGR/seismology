@@ -380,7 +380,7 @@ class SortingModel(object):
                     amp_i = amp_i / np.abs(amp_i).max()
                     seis_windows[i] = amp_i.reshape(self.total_time, 1)
                 
-                np.savez(self.npz_path+'npy/{}'.format(file), seis=seis_windows)
+                np.savez(self.npz_path+'npz/{}'.format(file), seis=seis_windows)
             
         return
     
@@ -408,7 +408,7 @@ class SortingModel(object):
             for i, file in enumerate(npz_list):
                 npz = np.load(self.npz_path+'npz/'+file)
                 input_array[(self.number_shift+1)*i:(self.number_shift+1)*(i+1)] = npz['seis']
-                output_array[(self.number_shift+1)*i:(self.number_shift+1)*(i+1)] = npz['arrival']
+                output_array[(self.number_shift+1)*i:(self.number_shift+1)*(i+1)] = npz['seis']
         return input_array, output_array
     
     def __get_Callbacks(self, epochs):
@@ -436,7 +436,7 @@ class SortingModel(object):
         tick = clock()
         for m in range(self.model_iters):        
             print('Training arrival prediction model', m+1)
-            model = self.__rossNetAE()
+            model = self.__rossNetAE(1250)
             
             callbacks = self.__get_Callbacks(self.epochs)
             
@@ -560,5 +560,8 @@ class SortingModel(object):
                           activation='linear', padding='same')(conv_up3)
         
         model = Model(input_seis, decoding)
+        
+        model.compile(loss='mean_absolute_error',
+                  optimizer=Adam(1e-4))
         
         return model
