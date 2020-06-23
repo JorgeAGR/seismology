@@ -39,9 +39,9 @@ class PickingModel(object):
         self.number_shift = config['number_shift']
         self.window_shift = config['window_shift']
         try:
-            self.npz_path = config['temp_write_path'] + self.model_name
+            self.npz_path = config['temp_write_path'] + self.model_name + 'npz/'
         except:
-            self.npz_path = self.model_path
+            self.npz_path = self.model_path + 'npz/'
         
         self.total_time = (self.window_before + self.window_after) * self.sample_rate
         
@@ -58,14 +58,14 @@ class PickingModel(object):
         the future. Meant for training/testing data.
         '''
         try:
-            os.mkdir(self.npz_path+'npz/')
+            os.mkdir(self.npz_path)
         except:
             pass
         files = np.sort(os.listdir(self.files_path))
         gen_whitespace = lambda x: ' '*len(x)
         
         for f, file in enumerate(files):
-            if file+'npz' in os.listdir(self.npz_path+'npz/'):
+            if file+'npz' in os.listdir(self.npz_path):
                 continue
             else:
                 file = check_String(file)
@@ -121,13 +121,13 @@ class PickingModel(object):
                     arrivals[i] = arrival - time[init]
                     cut_time[i] = time[init]
                 
-                np.savez(self.npz_path+'npz/{}'.format(file),
+                np.savez(self.npz_path+'{}'.format(file),
                          seis=seis_windows, arrival=arrivals, cut=cut_time)
             
         return
     
     def __train_Test_Split(self, idnum, seed=None):
-        npz_files = np.sort(os.listdir(self.npz_path+'npz/'.format(self.model_name)))
+        npz_files = np.sort(os.listdir(self.npz_path.format(self.model_name)))
         cutoff = int(len(npz_files) * (1-self.test_split))
         np.random.seed(seed)
         np.random.shuffle(npz_files)
@@ -143,12 +143,12 @@ class PickingModel(object):
         arr_array = np.zeros((len(npz_list)*(self.number_shift+1)**(not single), 1))
         if single:
             for i, file in enumerate(npz_list):
-                npz = np.load(self.npz_path+'npz/'+file)
+                npz = np.load(self.npz_path+file)
                 seis_array[i] = npz['seis'][0]
                 arr_array[i] = npz['arrival'][0]
         else:
             for i, file in enumerate(npz_list):
-                npz = np.load(self.npz_path+'npz/'+file)
+                npz = np.load(self.npz_path+file)
                 seis_array[(self.number_shift+1)*i:(self.number_shift+1)*(i+1)] = npz['seis']
                 arr_array[(self.number_shift+1)*i:(self.number_shift+1)*(i+1)] = npz['arrival']
         return seis_array, arr_array
@@ -223,7 +223,7 @@ class PickingModel(object):
         #best_model = np.argmin(models_means)
         tock = clock()
         train_time = (tock-tick)/3600 # hours
-        best_model = np.argmin(models_train_means)
+        best_model = np.argmin(models_test_final_loss)
 
         with open(self.model_path + 'train_logs/{}_log.txt'.format(self.model_name), 'w+') as log:
             print('\nUsing best model: Model {}\n'.format(best_model), file=log)
@@ -241,7 +241,7 @@ class PickingModel(object):
         self.model = models[best_model]
         np.savez(self.model_path + 'train_logs/{}_train_history'.format(self.model_name),
                 loss=models_train_lpe, val_loss=models_test_lpe, best_model=best_model, train_time=train_time)
-        call(['rm','-r',self.npz_path + 'npz/'])
+        call(['rm','-r',self.npz_path])
         return
     
     def load_Model(self, model_file):
@@ -303,11 +303,11 @@ class SortingModel(object):
         self.number_shift = config['number_shift']
         self.window_shift = config['window_shift']
         try:
-            self.npz_path = config['temp_write_path'] + self.model_name
+            self.npz_path = config['temp_write_path'] + self.model_name + 'npz/'
         except:
-            self.npz_path = self.model_path
+            self.npz_path = self.model_path + 'npz/'
         
-        self.total_time = (self.window_before + self.window_after) * self.sample_rate
+        self.total_points = (self.window_before + self.window_after) * self.sample_rate
         
         if self.model_name not in os.listdir('models/'):
             for directory in [self.model_path, self.model_path+'train_logs/']:
@@ -322,14 +322,14 @@ class SortingModel(object):
         the future. Meant for training/testing data.
         '''
         try:
-            os.mkdir(self.npz_path+'npz/')
+            os.mkdir(self.npz_path)
         except:
             pass
         files = np.sort(os.listdir(self.files_path))
         gen_whitespace = lambda x: ' '*len(x)
         
         for f, file in enumerate(files):
-            if file+'npz' in os.listdir(self.npz_path+'npz/'):
+            if file+'npz' in os.listdir(self.npz_path):
                 continue
             else:
                 file = check_String(file)
@@ -368,26 +368,26 @@ class SortingModel(object):
                 rand_window_shifts = rand_window_shifts[abs_sort]
                 rand_window_shifts[0] = 0
                 
-                seis_windows = np.zeros((self.number_shift+1, self.total_time, 1))
+                seis_windows = np.zeros((self.number_shift+1, self.total_points, 1))
                 for i, n in enumerate(rand_window_shifts):
                     rand_arrival = th_arrival - n * self.window_shift
                     init = int(np.round((rand_arrival - self.window_before)*self.sample_rate))
-                    end = init + self.total_time
-                    if (end-init < self.total_time):
-                        init = init - (self.total_time - (end-init))
+                    end = init + self.total_points
+                    if (end-init < self.total_points):
+                        init = init - (self.total_points - (end-init))
                     #    init = int(np.round((arrival - 15 * np.random.rand() - self.window_before)*self.sample_rate))
-                    #    end = init + self.total_time
+                    #    end = init + self.total_points
                     amp_i = amp[init:end]
                     # Normalize by absolute peak, [-1, 1]
                     amp_i = amp_i / np.abs(amp_i).max()
-                    seis_windows[i] = amp_i.reshape(self.total_time, 1)
+                    seis_windows[i] = amp_i.reshape(self.total_points, 1)
                 
-                np.savez(self.npz_path+'npz/{}'.format(file), seis=seis_windows)
+                np.savez(self.npz_path+'{}'.format(file), seis=seis_windows)
             
         return
     
     def __train_Test_Split(self, idnum, seed=None):
-        npz_files = np.sort(os.listdir(self.npz_path+'npz/'.format(self.model_name)))
+        npz_files = np.sort(os.listdir(self.npz_path.format(self.model_name)))
         cutoff = int(len(npz_files) * (1-self.test_split))
         np.random.seed(seed)
         np.random.shuffle(npz_files)
@@ -399,16 +399,16 @@ class SortingModel(object):
         return train_npz_list, test_npz_list
     
     def __load_Data(self, npz_list, single=False):
-        input_array = np.zeros((len(npz_list)*(self.number_shift+1)**(not single), self.total_time, 1))
-        output_array = np.zeros((len(npz_list)*(self.number_shift+1)**(not single), self.total_time, 1))
+        input_array = np.zeros((len(npz_list)*(self.number_shift+1)**(not single), self.total_points, 1))
+        output_array = np.zeros((len(npz_list)*(self.number_shift+1)**(not single), self.total_points, 1))
         if single:
             for i, file in enumerate(npz_list):
-                npz = np.load(self.npz_path+'npz/'+file)
+                npz = np.load(self.npz_path+file)
                 input_array[i] = npz['seis'][0]
                 output_array[i] = npz['seis'][0]
         else:
             for i, file in enumerate(npz_list):
-                npz = np.load(self.npz_path+'npz/'+file)
+                npz = np.load(self.npz_path+file)
                 input_array[(self.number_shift+1)*i:(self.number_shift+1)*(i+1)] = npz['seis']
                 output_array[(self.number_shift+1)*i:(self.number_shift+1)*(i+1)] = npz['seis']
         return input_array, output_array
@@ -443,6 +443,7 @@ class SortingModel(object):
             callbacks = self.__get_Callbacks(self.epochs)
             
             train_files, test_files = self.__train_Test_Split(m)
+            '''
             train_x, train_y = self.__load_Data(train_files)
             test_x, test_y = self.__load_Data(test_files)
             
@@ -452,30 +453,45 @@ class SortingModel(object):
                                    epochs=self.epochs,
                                    verbose=2,
                                    callbacks=callbacks)
+            '''
+            
+            train_generator = SortingDataGenerator(self.npz_path, train_files, self.total_points)
+            test_generator = SortingDataGenerator(self.npz_path, test_files, self.total_points)
+            
+            train_hist = model.fit(train_generator,
+                                    validation_data=test_generator,
+                                    callbacks=callbacks,
+                                    verbose=2,)
+                                    #use_multiprocessing=True,
+                                    #workers=6,)
             
             total_epochs = len(train_hist.history['loss'])
-            
+            '''
             train_pred = model.predict(train_x)
             test_pred = model.predict(test_x)
             test_loss = model.evaluate(test_x, test_y,
                                        batch_size=self.batch_size, verbose=0)
+            '''
+            #train_pred = model.predict(train_generator)
+            #test_pred = model.predict(test_generator)
+            test_loss = model.evaluate(test_generator, verbose=0)
             
-            model_train_diff = np.abs(train_y - train_pred)
-            model_test_diff = np.abs(test_y - test_pred)
-            model_train_mean = np.mean(model_train_diff)
-            model_train_std = np.std(model_train_diff)
-            model_test_mean = np.mean(model_test_diff)
-            model_test_std = np.std(model_test_diff)
+            #model_train_diff = np.abs(train_y - train_pred)
+            #model_test_diff = np.abs(test_y - test_pred)
+            #model_train_mean = np.mean(model_train_diff)
+            #model_train_std = np.std(model_train_diff)
+            #model_test_mean = np.mean(model_test_diff)
+            #model_test_std = np.std(model_test_diff)
             
-            print('Train Error:{:.3f} +/- {:.3f}'.format(model_train_mean, model_train_std))
-            print('Test Error:{:.3f} +/- {:.3f}'.format(model_test_mean, model_test_std))
+            #print('Train Error:{:.3f} +/- {:.3f}'.format(model_train_mean, model_train_std))
+            #print('Test Error:{:.3f} +/- {:.3f}'.format(model_test_mean, model_test_std))
             print('Test Loss:{:.3f}'.format(test_loss))
             
             models.append(model)
-            models_train_means[m] += model_train_mean
-            models_train_stds[m] += model_train_std
-            models_test_means[m] += model_test_mean
-            models_test_stds[m] += model_test_std
+            #models_train_means[m] += model_train_mean
+            #models_train_stds[m] += model_train_std
+            #models_test_means[m] += model_test_mean
+            #models_test_stds[m] += model_test_std
             models_test_final_loss[m] += test_loss
             models_train_lpe[m][:total_epochs] = train_hist.history['loss']
             models_test_lpe[m][:total_epochs] = train_hist.history['val_loss']
@@ -483,7 +499,7 @@ class SortingModel(object):
         #best_model = np.argmin(models_means)
         tock = clock()
         train_time = (tock-tick)/3600 # hours
-        best_model = np.argmin(models_train_means)
+        best_model = np.argmin(models_test_final_loss)
 
         with open(self.model_path + 'train_logs/{}_log.txt'.format(self.model_name), 'w+') as log:
             print('\nUsing best model: Model {}\n'.format(best_model), file=log)
@@ -501,7 +517,8 @@ class SortingModel(object):
         self.model = models[best_model]
         np.savez(self.model_path + 'train_logs/{}_train_history'.format(self.model_name),
                 loss=models_train_lpe, val_loss=models_test_lpe, best_model=best_model, train_time=train_time)
-        call(['rm','-r',self.npz_path + 'npz/'])
+        
+        call(['rm','-r',self.npz_path])
         return
     
     def load_Model(self, model_file):
@@ -518,7 +535,7 @@ class SortingModel(object):
         Main architecture idea:
         Ref: https://doi.org/10.1029/2017JB015251
         '''
-        input_seis = Input(shape=(self.total_time, 1))
+        input_seis = Input(shape=(self.total_points, 1))
 
         conv1 = Conv1D(32, kernel_size=21, strides=1,
                          activation='relu', padding='same')(input_seis)
@@ -567,3 +584,55 @@ class SortingModel(object):
                   optimizer=Adam(1e-4))
         
         return model
+    
+class SortingDataGenerator(Sequence):
+    '''
+    Based on the implementation by Shervine Amidi
+    https://stanford.edu/~shervine/blog/keras-how-to-generate-data-on-the-fly
+    '''
+    'Generates data for Keras'
+    def __init__(self, npy_path, list_IDs, seismo_size, batch_size=128, n_channels=1, shuffle=True):
+        'Initialization'
+        self.path = npy_path
+        self.dim = (1, seismo_size, 1)
+        self.batch_size = batch_size
+        self.list_IDs = list_IDs
+        self.n_channels = n_channels
+        self.shuffle = shuffle
+        self.on_epoch_end()
+        self.seismo_size = seismo_size
+
+    def __len__(self):
+        'Denotes the number of batches per epoch'
+        return int(np.floor(len(self.list_IDs) / self.batch_size))
+
+    def __getitem__(self, index):
+        'Generate one batch of data'
+        # Generate indexes of the batch
+        indexes = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
+
+        # Find list of IDs
+        list_IDs_temp = [self.list_IDs[k] for k in indexes]
+
+        # Generate data
+        x, y = self.__data_generation(list_IDs_temp)
+
+        return x, y
+
+    def on_epoch_end(self):
+        'Updates indexes after each epoch'
+        self.indexes = np.arange(len(self.list_IDs))
+        if self.shuffle == True:
+            np.random.shuffle(self.indexes)
+
+    def __data_generation(self, list_IDs_temp):
+        'Generates data containing batch_size samples'
+        # Initialization
+        x = np.zeros((self.batch_size, self.seismo_size, self.n_channels))
+
+        # Generate data
+        for i, ID in enumerate(list_IDs_temp):
+            
+            x[i,] = np.load(self.path + ID)['seis']
+
+        return x, x
